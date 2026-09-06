@@ -361,7 +361,8 @@
                 'mdi-minus.svg': 'hr.png',
                 'mdi-image.svg': 'image.png',
                 'mdi-emoticon-outline.svg': 'smiley.png',
-                'mdi-omega.svg': 'chars.png'
+                'mdi-omega.svg': 'chars.png',
+                'mdi-signature.svg': 'sig.png'
             };
             const monochromeToolbarIcons = new Set([
                 'bold.png', 'italic.png', 'link.png', 'mono.png', 'strike.png', 'underline.png'
@@ -371,8 +372,10 @@
                 dokuToolbar.querySelectorAll('img').forEach(function (image) {
                     const source = image.getAttribute('src') || '';
                     const url = new URL(image.src, document.baseURI);
-                    const replacement = source.indexOf('lib/images/toolbar/') !== -1 && source.indexOf('iconify.php') !== -1 ?
-                        bootstrapIconMap[url.searchParams.get('icon')] : null;
+                    const icon = url.searchParams.get('icon') || url.pathname.slice(url.pathname.lastIndexOf('/') + 1);
+                    const fromBuiltInToolbar = source.indexOf('lib/images/toolbar/') !== -1;
+                    const fromBootstrapIconify = source.indexOf('iconify.php') !== -1 || source.indexOf('/iconify/') !== -1;
+                    const replacement = fromBuiltInToolbar && fromBootstrapIconify ? bootstrapIconMap[icon] : null;
                     if (replacement) {
                         image.src = toolbarIconBase + replacement;
                         url.pathname = toolbarIconBase + replacement;

@@ -150,6 +150,11 @@
     vertical-align: middle !important;
 }
 
+.dw-monaco-commandbar #tool__bar img[src*="/tpl/bootstrap3/iconify/"],
+.dw-monaco-commandbar #tool__bar img[src*="iconify.php"] {
+    filter: grayscale(1) brightness(0) invert(0.86) !important;
+}
+
 .dw-monaco-commandbar #tool__bar .dw-monaco-built-in-icon {
     filter: none !important;
 }
@@ -245,6 +250,43 @@
     text-indent: 0;
     text-shadow: none;
     text-transform: none;
+}
+
+/* Keep page and template typography from changing Monaco's measured glyphs. */
+.dw-monaco-editor .monaco-editor .view-lines,
+.dw-monaco-editor .monaco-editor .view-line,
+.dw-monaco-editor .monaco-editor .view-line span {
+    font-family: var(--vscode-editor-font-family) !important;
+    font-size: 14px !important;
+    font-style: normal !important;
+    font-weight: 400 !important;
+    font-variant: normal !important;
+    font-variant-ligatures: none !important;
+    letter-spacing: 0 !important;
+    line-height: 19px !important;
+}
+
+.dw-monaco-editor .monaco-editor .quick-input-widget,
+.dw-monaco-editor .monaco-editor .quick-input-widget input,
+.dw-monaco-editor .monaco-editor .quick-input-list .monaco-list-row,
+.dw-monaco-editor .monaco-editor .quick-input-list .monaco-highlighted-label,
+.dw-monaco-editor .monaco-editor .quick-input-list .label-name,
+.dw-monaco-editor .monaco-editor .quick-input-list .label-description {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", sans-serif !important;
+    font-size: 13px !important;
+    font-style: normal !important;
+    font-weight: 400 !important;
+    letter-spacing: normal !important;
+    text-shadow: none !important;
+    text-transform: none !important;
+}
+
+.dw-monaco-editor .monaco-editor .quick-input-widget input,
+.dw-monaco-editor .monaco-editor .quick-input-list .monaco-list-row,
+.dw-monaco-editor .monaco-editor .quick-input-list .monaco-highlighted-label,
+.dw-monaco-editor .monaco-editor .quick-input-list .label-name,
+.dw-monaco-editor .monaco-editor .quick-input-list .label-description {
+    line-height: 22px !important;
 }
 
 .dw-monaco-pane {
