@@ -412,6 +412,12 @@
         const editorPane = shell.querySelector('.dw-monaco-editor-pane');
         const previewPane = shell.querySelector('.dw-monaco-preview-pane');
         const positionStatus = shell.querySelector('.dw-monaco-position');
+        const sizeControl = document.getElementById('size__ctl') || document.querySelector('.size__ctl');
+        const savedHeight = typeof DokuCookie !== 'undefined' ? parseFloat(DokuCookie.getValue('sizeCtl')) : NaN;
+        if (Number.isFinite(savedHeight) && savedHeight >= 360) {
+            workspace.style.height = savedHeight + 'px';
+            workspace.style.maxHeight = 'none';
+        }
         format.value = detectFormat(textarea.value);
 
         try {
@@ -458,6 +464,23 @@
             }
             window.addEventListener('resize', refreshEditorMetrics);
             if (window.visualViewport) window.visualViewport.addEventListener('resize', refreshEditorMetrics);
+
+            if (sizeControl) {
+                sizeControl.querySelectorAll('button').forEach(function (button) {
+                    const image = button.querySelector('img');
+                    if (!image) return;
+                    const filename = new URL(image.src, document.baseURI).pathname.split('/').pop();
+                    const delta = filename === 'larger.svg' ? 100 : filename === 'smaller.svg' ? -100 : 0;
+                    if (!delta) return;
+                    button.addEventListener('click', function () {
+                        const height = Math.max(360, Math.round(workspace.getBoundingClientRect().height + delta));
+                        workspace.style.height = height + 'px';
+                        workspace.style.maxHeight = 'none';
+                        if (typeof DokuCookie !== 'undefined') DokuCookie.setValue('sizeCtl', height + 'px');
+                        editor.layout();
+                    });
+                });
+            }
 
             let previewTimer;
             let previewRequest;
