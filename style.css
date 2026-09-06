@@ -26,7 +26,7 @@
     --vscode-editor-font-family: Consolas, "Cascadia Mono", "Cascadia Code", "Courier New", monospace;
     width: 100%;
     margin: 0.5rem 0 1rem;
-    overflow: hidden;
+    overflow: visible;
     isolation: isolate;
     border: 1px solid var(--vscode-panel-border);
     background: var(--vscode-editor-background);
@@ -76,7 +76,7 @@
 .dw-monaco-commandbar {
     min-width: 0;
     flex: 1;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .dw-monaco-commandbar #tool__bar {
@@ -84,7 +84,7 @@
     display: flex;
     align-items: center;
     gap: 2px;
-    overflow-x: auto;
+    overflow: visible;
     width: auto !important;
     height: 26px !important;
     margin: 0 !important;
@@ -98,8 +98,8 @@
     white-space: nowrap;
 }
 
-.dw-monaco-commandbar #tool__bar button,
-.dw-monaco-commandbar #tool__bar a {
+.dw-monaco-commandbar #tool__bar > button,
+.dw-monaco-commandbar #tool__bar > a {
     appearance: none !important;
     box-sizing: border-box !important;
     display: inline-flex !important;
@@ -129,15 +129,15 @@
     vertical-align: middle !important;
 }
 
-.dw-monaco-commandbar #tool__bar button *,
-.dw-monaco-commandbar #tool__bar a * {
+.dw-monaco-commandbar #tool__bar > button *,
+.dw-monaco-commandbar #tool__bar > a * {
     color: inherit !important;
     font-size: inherit !important;
     font-weight: 400 !important;
 }
 
-.dw-monaco-commandbar #tool__bar button img,
-.dw-monaco-commandbar #tool__bar a img {
+.dw-monaco-commandbar #tool__bar > button img,
+.dw-monaco-commandbar #tool__bar > a img {
     display: block !important;
     width: 16px !important;
     max-width: none !important;
@@ -163,13 +163,13 @@
     filter: grayscale(1) brightness(0) invert(0.86) !important;
 }
 
-.dw-monaco-commandbar #tool__bar button:hover,
-.dw-monaco-commandbar #tool__bar a:hover {
+.dw-monaco-commandbar #tool__bar > button:hover,
+.dw-monaco-commandbar #tool__bar > a:hover {
     background: #2a2d2e !important;
 }
 
-.dw-monaco-commandbar #tool__bar button:hover img,
-.dw-monaco-commandbar #tool__bar a:hover img {
+.dw-monaco-commandbar #tool__bar > button:hover img,
+.dw-monaco-commandbar #tool__bar > a:hover img {
     opacity: 1;
 }
 

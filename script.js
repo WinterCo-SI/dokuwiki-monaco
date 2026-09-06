@@ -491,30 +491,31 @@
                     const source = editor.getValue();
                     textarea.value = source;
                     let html;
-                    if (format.value === 'markdown') {
-                        window.marked.setOptions({gfm: true, breaks: false});
-                        html = window.marked.parse(source);
-                    } else {
-                        previewRequest = new AbortController();
-                        const body = new URLSearchParams({
-                            call: 'plugin_monaco_preview',
-                            id: pageName,
-                            wikitext: source
+                    previewRequest = new AbortController();
+                    const body = new URLSearchParams({
+                        call: 'plugin_monaco_preview',
+                        id: pageName,
+                        format: format.value,
+                        wikitext: source
+                    });
+                    try {
+                        const base = typeof DOKU_BASE === 'string' ? DOKU_BASE : '/';
+                        const response = await fetch(base + 'lib/exe/ajax.php', {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'},
+                            body: body.toString(),
+                            signal: previewRequest.signal
                         });
-                        try {
-                            const base = typeof DOKU_BASE === 'string' ? DOKU_BASE : '/';
-                            const response = await fetch(base + 'lib/exe/ajax.php', {
-                                method: 'POST',
-                                credentials: 'same-origin',
-                                headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'},
-                                body: body.toString(),
-                                signal: previewRequest.signal
-                            });
-                            if (!response.ok) throw new Error('Preview request failed: ' + response.status);
-                            html = await response.text();
-                        } catch (error) {
-                            if (error.name === 'AbortError') return;
-                            console.warn('DokuWiki preview failed; using the basic renderer.', error);
+                        if (!response.ok) throw new Error('Preview request failed: ' + response.status);
+                        html = await response.text();
+                    } catch (error) {
+                        if (error.name === 'AbortError') return;
+                        console.warn('DokuWiki preview failed; using the browser fallback.', error);
+                        if (format.value === 'markdown') {
+                            window.marked.setOptions({gfm: true, breaks: false});
+                            html = window.marked.parse(source);
+                        } else {
                             html = renderDokuWiki(source);
                         }
                     }
@@ -578,10 +579,7 @@
             }
 
             if (dokuToolbar) {
-                dokuToolbar.addEventListener('pointerdown', prepareToolbarEdit, true);
-                dokuToolbar.addEventListener('keydown', function (event) {
-                    if (event.key === 'Enter' || event.key === ' ') prepareToolbarEdit();
-                }, true);
+                dokuToolbar.addEventListener('click', prepareToolbarEdit, true);
                 dokuToolbar.addEventListener('click', function () {
                     window.setTimeout(applyToolbarEdit, 0);
                 });

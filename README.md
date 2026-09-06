@@ -4,10 +4,11 @@ Replaces DokuWiki's edit textarea with Monaco Editor and a live, split-pane
 preview. The format menu switches between DokuWiki wikitext and GitHub-flavored
 Markdown syntax highlighting and rendering.
 
-The DokuWiki preview is rendered by DokuWiki through a same-origin AJAX call,
-so installed syntax plugins such as WRAP and Bootstrap Wrapper are applied.
-GitHub-flavored Markdown is rendered in the browser by Marked. Rendered output
-is sanitized by DOMPurify before it enters the page.
+Previews for both editing formats are rendered by DokuWiki through a same-origin
+AJAX call, so installed syntax plugins such as WRAP and Bootstrap Wrapper are
+applied. If the server preview fails, the browser falls back to Marked for
+GitHub-flavored Markdown or a basic DokuWiki renderer. Rendered output is
+sanitized by DOMPurify before it enters the page.
 
 The workbench follows the browser-IDE pattern used by StackBlitz and
 CodeSandbox: Monaco supplies the editor, while this plugin owns the pane layout
