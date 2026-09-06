@@ -363,11 +363,25 @@
                 'mdi-emoticon-outline.svg': 'smiley.png',
                 'mdi-omega.svg': 'chars.png'
             };
+            const monochromeToolbarIcons = new Set([
+                'bold.png', 'italic.png', 'link.png', 'mono.png', 'strike.png', 'underline.png'
+            ]);
             const toolbarIconBase = (typeof DOKU_BASE === 'string' ? DOKU_BASE : '/') + 'lib/images/toolbar/';
             function restoreBuiltInToolbarIcons() {
-                dokuToolbar.querySelectorAll('img[src*="iconify.php"]').forEach(function (image) {
-                    const icon = new URL(image.src, document.baseURI).searchParams.get('icon');
-                    if (bootstrapIconMap[icon]) image.src = toolbarIconBase + bootstrapIconMap[icon];
+                dokuToolbar.querySelectorAll('img').forEach(function (image) {
+                    const source = image.getAttribute('src') || '';
+                    const url = new URL(image.src, document.baseURI);
+                    const replacement = source.indexOf('lib/images/toolbar/') !== -1 && source.indexOf('iconify.php') !== -1 ?
+                        bootstrapIconMap[url.searchParams.get('icon')] : null;
+                    if (replacement) {
+                        image.src = toolbarIconBase + replacement;
+                        url.pathname = toolbarIconBase + replacement;
+                        url.search = '';
+                    }
+                    const builtIn = /\/lib\/images\/toolbar\/[^/]+$/.test(url.pathname);
+                    const filename = url.pathname.slice(url.pathname.lastIndexOf('/') + 1);
+                    image.classList.toggle('dw-monaco-built-in-icon', builtIn);
+                    image.classList.toggle('dw-monaco-monochrome-icon', builtIn && monochromeToolbarIcons.has(filename));
                 });
             }
             restoreBuiltInToolbarIcons();
