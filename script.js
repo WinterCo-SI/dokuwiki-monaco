@@ -325,7 +325,6 @@
             '<span class="dw-monaco-file">' + escapeHtml(pageName) + '</span>' +
             '<div class="dw-monaco-commandbar"></div>' +
             '<div class="dw-monaco-controls">' +
-            '<button type="button" class="dw-monaco-layout" aria-label="Toggle preview layout"><span class="codicon codicon-layout-panel" aria-hidden="true"></span> Preview below</button>' +
             '<button type="button" class="dw-monaco-preview-toggle" aria-pressed="false"><span class="codicon codicon-eye-closed" aria-hidden="true"></span> Hide preview</button>' +
             '</div></div>' +
             '<div class="dw-monaco-workspace">' +
@@ -334,11 +333,50 @@
             '<section class="dw-monaco-pane dw-monaco-preview-pane"><header draggable="true" role="tab" title="Drag to move preview"><span class="codicon codicon-open-preview" aria-hidden="true"></span>Preview</header><div class="dw-monaco-preview" aria-live="polite"></div></section>' +
             '</div><div class="dw-monaco-statusbar"><span class="dw-monaco-status-item"><span class="codicon codicon-code" aria-hidden="true"></span> DokuWiki</span><span class="dw-monaco-status" role="status">Loading editor…</span>' +
             '<span class="dw-monaco-position">Ln 1, Col 1</span><span class="dw-monaco-status-item">Spaces: 2</span><span class="dw-monaco-status-item">UTF-8</span>' +
+            '<button type="button" class="dw-monaco-word-wrap dw-monaco-status-button" aria-pressed="true" title="Toggle word wrap"><span class="codicon codicon-word-wrap" aria-hidden="true"></span> Wrap</button>' +
             '<label class="dw-monaco-format-control"><span class="codicon codicon-symbol-enum" aria-hidden="true"></span><span>Format</span><select class="dw-monaco-format"><option value="dokuwiki">DokuWiki</option><option value="markdown">GitHub Markdown</option></select></label></div>';
         textarea.parentNode.insertBefore(shell, textarea.nextSibling);
 
         const dokuToolbar = document.getElementById('tool__bar');
         if (dokuToolbar) {
+            const bootstrapIconMap = {
+                'mdi-format-bold.svg': 'bold.png',
+                'mdi-format-italic.svg': 'italic.png',
+                'mdi-format-underline.svg': 'underline.png',
+                'mdi-format-title.svg': 'mono.png',
+                'mdi-format-strikethrough.svg': 'strike.png',
+                'mdi-format-header-equal.svg': 'hequal.png',
+                'mdi-format-header-decrease.svg': 'hminus.png',
+                'mdi-format-header-increase.svg': 'hplus.png',
+                'mdi-format-header-pound.svg': 'h.png',
+                'mdi-format-header-1.svg': 'h1.png',
+                'mdi-format-header-2.svg': 'h2.png',
+                'mdi-format-header-3.svg': 'h3.png',
+                'mdi-format-header-4.svg': 'h4.png',
+                'mdi-format-header-5.svg': 'h5.png',
+                'mdi-link.svg': 'link.png',
+                'mdi-link-variant.svg': 'linkextern.png',
+                'mdi-format-list-numbered.svg': 'ol.png',
+                'mdi-format-list-bulleted.svg': 'ul.png',
+                'mdi-minus.svg': 'hr.png',
+                'mdi-image.svg': 'image.png',
+                'mdi-emoticon-outline.svg': 'smiley.png',
+                'mdi-omega.svg': 'chars.png'
+            };
+            const toolbarIconBase = (typeof DOKU_BASE === 'string' ? DOKU_BASE : '/') + 'lib/images/toolbar/';
+            function restoreBuiltInToolbarIcons() {
+                dokuToolbar.querySelectorAll('img[src*="iconify.php"]').forEach(function (image) {
+                    const icon = new URL(image.src, document.baseURI).searchParams.get('icon');
+                    if (bootstrapIconMap[icon]) image.src = toolbarIconBase + bootstrapIconMap[icon];
+                });
+            }
+            restoreBuiltInToolbarIcons();
+            new MutationObserver(restoreBuiltInToolbarIcons).observe(dokuToolbar, {
+                subtree: true,
+                childList: true,
+                attributes: true,
+                attributeFilter: ['src']
+            });
             const oldToolbarHost = dokuToolbar.parentElement;
             shell.querySelector('.dw-monaco-commandbar').appendChild(dokuToolbar);
             if (oldToolbarHost && oldToolbarHost !== shell && !oldToolbarHost.children.length) {
@@ -350,8 +388,8 @@
         const preview = shell.querySelector('.dw-monaco-preview');
         const format = shell.querySelector('.dw-monaco-format');
         const status = shell.querySelector('.dw-monaco-status');
-        const layoutButton = shell.querySelector('.dw-monaco-layout');
         const previewButton = shell.querySelector('.dw-monaco-preview-toggle');
+        const wordWrapButtons = shell.querySelectorAll('.dw-monaco-word-wrap');
         const workspace = shell.querySelector('.dw-monaco-workspace');
         const resizer = shell.querySelector('.dw-monaco-resizer');
         const editorPane = shell.querySelector('.dw-monaco-editor-pane');
@@ -373,10 +411,10 @@
                 value: textarea.value,
                 language: format.value,
                 automaticLayout: true,
-                minimap: {enabled: false},
+                minimap: {enabled: true, renderCharacters: false, showSlider: 'mouseover'},
                 wordWrap: 'on',
                 scrollBeyondLastLine: false,
-                fontFamily: "'Cascadia Mono', 'Cascadia Code', Consolas, 'Courier New', monospace",
+                fontFamily: "Consolas, 'Cascadia Mono', 'Cascadia Code', 'Courier New', monospace",
                 fontSize: 14,
                 fontWeight: 'normal',
                 fontLigatures: false,
@@ -408,11 +446,11 @@
             let previewRequest;
             function renderPreview() {
                 clearTimeout(previewTimer);
+                if (previewRequest) previewRequest.abort();
                 previewTimer = setTimeout(async function () {
                     const source = editor.getValue();
                     textarea.value = source;
                     let html;
-                    if (previewRequest) previewRequest.abort();
                     if (format.value === 'markdown') {
                         window.marked.setOptions({gfm: true, breaks: false});
                         html = window.marked.parse(source);
@@ -446,18 +484,21 @@
                         FORBID_TAGS: ['style', 'form', 'button', 'select', 'textarea']
                     });
                     status.textContent = source.length.toLocaleString() + ' characters';
-                }, 160);
+                }, 200);
             }
 
             editor.onDidChangeModelContent(function () {
-                textarea.value = editor.getValue();
                 renderPreview();
             });
 
             let lastSelection = editor.getSelection();
             editor.onDidChangeCursorSelection(function (event) {
                 lastSelection = event.selection;
-                positionStatus.textContent = 'Ln ' + event.selection.positionLineNumber + ', Col ' + event.selection.positionColumn;
+                const selected = [event.selection].concat(event.secondarySelections || []).reduce(function (total, selection) {
+                    return total + editor.getModel().getValueLengthInRange(selection);
+                }, 0);
+                positionStatus.textContent = 'Ln ' + event.selection.positionLineNumber + ', Col ' + event.selection.positionColumn +
+                    (selected ? ' (' + selected.toLocaleString() + ' selected)' : '');
             });
 
             function prepareToolbarEdit() {
@@ -506,23 +547,20 @@
                 });
             }
 
-            const toolbarSync = window.setInterval(function () {
-                if (!shell.isConnected) {
-                    window.clearInterval(toolbarSync);
-                    return;
-                }
-                if (textarea.value !== editor.getValue()) applyToolbarEdit();
-            }, 250);
             format.addEventListener('change', function () {
                 monaco.editor.setModelLanguage(editor.getModel(), format.value);
                 renderPreview();
             });
-            layoutButton.addEventListener('click', function () {
-                shell.classList.toggle('dw-monaco-stacked');
-                layoutButton.innerHTML = '<span class="codicon codicon-layout-panel" aria-hidden="true"></span> ' +
-                    (shell.classList.contains('dw-monaco-stacked') ? 'Preview right' : 'Preview below');
-                updateResizerOrientation();
-                editor.layout();
+            let wordWrapEnabled = true;
+            wordWrapButtons.forEach(function (button) {
+                button.addEventListener('click', function () {
+                    wordWrapEnabled = !wordWrapEnabled;
+                    editor.updateOptions({wordWrap: wordWrapEnabled ? 'on' : 'off'});
+                    wordWrapButtons.forEach(function (control) {
+                        control.setAttribute('aria-pressed', String(wordWrapEnabled));
+                        control.classList.toggle('dw-monaco-control-off', !wordWrapEnabled);
+                    });
+                });
             });
             previewButton.addEventListener('click', function () {
                 const hidden = shell.classList.toggle('dw-monaco-preview-hidden');
@@ -547,8 +585,6 @@
                 workspace.appendChild(first);
                 workspace.appendChild(resizer);
                 workspace.appendChild(second);
-                layoutButton.innerHTML = '<span class="codicon codicon-layout-panel" aria-hidden="true"></span> ' +
-                    (stacked ? 'Preview right' : 'Preview below');
                 updateResizerOrientation();
                 editor.layout();
             }
