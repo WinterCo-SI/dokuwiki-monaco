@@ -1,0 +1,8 @@
+base   monaco
+author OpenAI
+email  support@example.invalid
+date   2026-09-05
+name   Monaco Editor
+desc   Monaco editing with DokuWiki/GFM highlighting and browser-side live preview
+url    https://www.dokuwiki.org/plugin:monaco
+

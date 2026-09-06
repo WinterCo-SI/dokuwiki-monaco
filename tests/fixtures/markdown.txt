@@ -1,0 +1,8 @@
+# Markdown fixture
+
+- [x] detected as GFM
+
+| Feature | Status |
+| --- | --- |
+| Preview | Ready |
+

@@ -1,0 +1,16 @@
+{
+  "cdnjs": {
+    "monacoLoader": "sha384-UcP5/iVWyRzIhnVjcB2o9W1eoYKL5fAhHTRzvFZg8ctOsoAoDeBQyQuyIk+BJ/nh",
+    "monacoMain": "sha384-fj9z+NUc93I3woCCy5IRQfrQ8Amu1E27tllwgb5gz3d9Vr1ymS13xcF6two3e4KH",
+    "monacoCss": "sha384-06yHXpYRlHEPaR4AS0fB/W+lMN09Zh5e1XMtfkNQdHV38OlhfkOEW5M+pCj3QskC",
+    "marked": "sha384-H+hy9ULve6xfxRkWIh/YOtvDdpXgV2fmAGQkIDTxIgZwNoaoBal14Di2YTMR6MzR",
+    "purify": "sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu"
+  },
+  "jsdelivr": {
+    "monacoLoader": "sha384-pHG02SG8pId94Np3AbPmBEJ1yPqaH0IkJGLSNGXYmuGhkazT8Lr/57WYpbkGjJtu",
+    "monacoMain": "sha384-fj9z+NUc93I3woCCy5IRQfrQ8Amu1E27tllwgb5gz3d9Vr1ymS13xcF6two3e4KH",
+    "monacoCss": "sha384-06yHXpYRlHEPaR4AS0fB/W+lMN09Zh5e1XMtfkNQdHV38OlhfkOEW5M+pCj3QskC",
+    "marked": "sha384-H+hy9ULve6xfxRkWIh/YOtvDdpXgV2fmAGQkIDTxIgZwNoaoBal14Di2YTMR6MzR",
+    "purify": "sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu"
+  }
+}
