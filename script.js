@@ -321,7 +321,7 @@
         shell.className = 'dw-monaco-shell';
         const pageName = typeof JSINFO === 'object' && JSINFO.id ? JSINFO.id : 'wikitext';
         shell.innerHTML = '<div class="dw-monaco-titlebar">' +
-            '<span class="dw-monaco-brand"><span class="codicon codicon-code" aria-hidden="true"></span> MONACO</span>' +
+            '<span class="dw-monaco-brand"><span class="codicon codicon-code" aria-hidden="true"></span></span>' +
             '<span class="dw-monaco-file">' + escapeHtml(pageName) + '</span>' +
             '<div class="dw-monaco-commandbar"></div>' +
             '<div class="dw-monaco-controls">' +
@@ -329,10 +329,11 @@
             '<button type="button" class="dw-monaco-preview-toggle" aria-pressed="false"><span class="codicon codicon-eye-closed" aria-hidden="true"></span> Hide preview</button>' +
             '</div></div>' +
             '<div class="dw-monaco-workspace">' +
-            '<section class="dw-monaco-pane dw-monaco-editor-pane"><header><span class="codicon codicon-code" aria-hidden="true"></span>' + escapeHtml(pageName) + '</header><div class="dw-monaco-editor"></div></section>' +
+            '<section class="dw-monaco-pane dw-monaco-editor-pane"><header draggable="true" role="tab" title="Drag to move editor"><span class="codicon codicon-code" aria-hidden="true"></span>' + escapeHtml(pageName) + '</header><div class="dw-monaco-editor"></div></section>' +
             '<div class="dw-monaco-resizer" role="separator" tabindex="0" aria-label="Resize editor and preview" aria-orientation="vertical"></div>' +
-            '<section class="dw-monaco-pane dw-monaco-preview-pane"><header><span class="codicon codicon-open-preview" aria-hidden="true"></span>Live Preview</header><div class="dw-monaco-preview" aria-live="polite"></div></section>' +
-            '</div><div class="dw-monaco-statusbar"><span>Monaco Editor</span><span class="dw-monaco-status" role="status">Loading editor…</span>' +
+            '<section class="dw-monaco-pane dw-monaco-preview-pane"><header draggable="true" role="tab" title="Drag to move preview"><span class="codicon codicon-open-preview" aria-hidden="true"></span>Preview</header><div class="dw-monaco-preview" aria-live="polite"></div></section>' +
+            '</div><div class="dw-monaco-statusbar"><span class="dw-monaco-status-item"><span class="codicon codicon-code" aria-hidden="true"></span> DokuWiki</span><span class="dw-monaco-status" role="status">Loading editor…</span>' +
+            '<span class="dw-monaco-position">Ln 1, Col 1</span><span class="dw-monaco-status-item">Spaces: 2</span><span class="dw-monaco-status-item">UTF-8</span>' +
             '<label class="dw-monaco-format-control"><span class="codicon codicon-symbol-enum" aria-hidden="true"></span><span>Format</span><select class="dw-monaco-format"><option value="dokuwiki">DokuWiki</option><option value="markdown">GitHub Markdown</option></select></label></div>';
         textarea.parentNode.insertBefore(shell, textarea.nextSibling);
 
@@ -353,6 +354,9 @@
         const previewButton = shell.querySelector('.dw-monaco-preview-toggle');
         const workspace = shell.querySelector('.dw-monaco-workspace');
         const resizer = shell.querySelector('.dw-monaco-resizer');
+        const editorPane = shell.querySelector('.dw-monaco-editor-pane');
+        const previewPane = shell.querySelector('.dw-monaco-preview-pane');
+        const positionStatus = shell.querySelector('.dw-monaco-position');
         format.value = detectFormat(textarea.value);
 
         try {
@@ -372,7 +376,12 @@
                 minimap: {enabled: false},
                 wordWrap: 'on',
                 scrollBeyondLastLine: false,
+                fontFamily: "'Cascadia Mono', 'Cascadia Code', Consolas, 'Courier New', monospace",
                 fontSize: 14,
+                fontWeight: 'normal',
+                fontLigatures: false,
+                fontVariations: false,
+                letterSpacing: 0,
                 tabSize: 2,
                 theme: 'vs-dark',
                 padding: {top: 12}
@@ -380,17 +389,57 @@
             textarea.classList.add('dw-monaco-source');
             status.textContent = 'Ready';
 
+            let metricRefreshFrame;
+            function refreshEditorMetrics() {
+                window.cancelAnimationFrame(metricRefreshFrame);
+                metricRefreshFrame = window.requestAnimationFrame(function () {
+                    monaco.editor.remeasureFonts();
+                    editor.layout();
+                });
+            }
+            if (document.fonts) {
+                document.fonts.ready.then(refreshEditorMetrics);
+                document.fonts.addEventListener('loadingdone', refreshEditorMetrics);
+            }
+            window.addEventListener('resize', refreshEditorMetrics);
+            if (window.visualViewport) window.visualViewport.addEventListener('resize', refreshEditorMetrics);
+
             let previewTimer;
+            let previewRequest;
             function renderPreview() {
                 clearTimeout(previewTimer);
-                previewTimer = setTimeout(function () {
+                previewTimer = setTimeout(async function () {
                     const source = editor.getValue();
                     textarea.value = source;
                     let html;
+                    if (previewRequest) previewRequest.abort();
                     if (format.value === 'markdown') {
                         window.marked.setOptions({gfm: true, breaks: false});
                         html = window.marked.parse(source);
-                    } else html = renderDokuWiki(source);
+                    } else {
+                        previewRequest = new AbortController();
+                        const body = new URLSearchParams({
+                            call: 'plugin_monaco_preview',
+                            id: pageName,
+                            wikitext: source
+                        });
+                        try {
+                            const base = typeof DOKU_BASE === 'string' ? DOKU_BASE : '/';
+                            const response = await fetch(base + 'lib/exe/ajax.php', {
+                                method: 'POST',
+                                credentials: 'same-origin',
+                                headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'},
+                                body: body.toString(),
+                                signal: previewRequest.signal
+                            });
+                            if (!response.ok) throw new Error('Preview request failed: ' + response.status);
+                            html = await response.text();
+                        } catch (error) {
+                            if (error.name === 'AbortError') return;
+                            console.warn('DokuWiki preview failed; using the basic renderer.', error);
+                            html = renderDokuWiki(source);
+                        }
+                    }
                     preview.innerHTML = window.DOMPurify.sanitize(html, {
                         USE_PROFILES: {html: true},
                         ADD_ATTR: ['target'],
@@ -405,14 +454,64 @@
                 renderPreview();
             });
 
-            // DokuWiki's formatting toolbar writes directly to wiki__text.
-            // Mirror those writes back into Monaco so the existing buttons work.
+            let lastSelection = editor.getSelection();
+            editor.onDidChangeCursorSelection(function (event) {
+                lastSelection = event.selection;
+                positionStatus.textContent = 'Ln ' + event.position.lineNumber + ', Col ' + event.position.column;
+            });
+
+            function prepareToolbarEdit() {
+                const model = editor.getModel();
+                const selection = lastSelection || editor.getSelection();
+                textarea.value = model.getValue();
+                textarea.selectionStart = model.getOffsetAt(selection.getStartPosition());
+                textarea.selectionEnd = model.getOffsetAt(selection.getEndPosition());
+            }
+
+            function applyToolbarEdit() {
+                const model = editor.getModel();
+                const before = model.getValue();
+                const after = textarea.value;
+                if (before === after) return;
+                let start = 0;
+                while (start < before.length && start < after.length && before[start] === after[start]) start++;
+                let beforeEnd = before.length;
+                let afterEnd = after.length;
+                while (beforeEnd > start && afterEnd > start && before[beforeEnd - 1] === after[afterEnd - 1]) {
+                    beforeEnd--;
+                    afterEnd--;
+                }
+                const resultSelectionStart = textarea.selectionStart;
+                const resultSelectionEnd = textarea.selectionEnd;
+                editor.pushUndoStop();
+                editor.executeEdits('dokuwiki-toolbar', [{
+                    range: monaco.Range.fromPositions(model.getPositionAt(start), model.getPositionAt(beforeEnd)),
+                    text: after.slice(start, afterEnd),
+                    forceMoveMarkers: true
+                }]);
+                const selectionStart = model.getPositionAt(resultSelectionStart);
+                const selectionEnd = model.getPositionAt(resultSelectionEnd);
+                editor.setSelection(monaco.Selection.fromPositions(selectionStart, selectionEnd));
+                editor.pushUndoStop();
+                editor.focus();
+            }
+
+            if (dokuToolbar) {
+                dokuToolbar.addEventListener('pointerdown', prepareToolbarEdit, true);
+                dokuToolbar.addEventListener('keydown', function (event) {
+                    if (event.key === 'Enter' || event.key === ' ') prepareToolbarEdit();
+                }, true);
+                dokuToolbar.addEventListener('click', function () {
+                    window.setTimeout(applyToolbarEdit, 0);
+                });
+            }
+
             const toolbarSync = window.setInterval(function () {
                 if (!shell.isConnected) {
                     window.clearInterval(toolbarSync);
                     return;
                 }
-                if (textarea.value !== editor.getValue()) editor.setValue(textarea.value);
+                if (textarea.value !== editor.getValue()) applyToolbarEdit();
             }, 250);
             format.addEventListener('change', function () {
                 monaco.editor.setModelLanguage(editor.getModel(), format.value);
@@ -431,6 +530,70 @@
                     (hidden ? 'Show preview' : 'Hide preview');
                 previewButton.setAttribute('aria-pressed', String(hidden));
                 editor.layout();
+            });
+
+            let draggedPane = null;
+            let dropPane = null;
+            let dropEdge = null;
+            function clearDropTarget() {
+                [editorPane, previewPane].forEach(function (pane) {
+                    pane.removeAttribute('data-drop-edge');
+                });
+                dropPane = null;
+                dropEdge = null;
+            }
+            function arrangePanes(first, second, stacked) {
+                shell.classList.toggle('dw-monaco-stacked', stacked);
+                workspace.appendChild(first);
+                workspace.appendChild(resizer);
+                workspace.appendChild(second);
+                layoutButton.innerHTML = '<span class="codicon codicon-layout-panel" aria-hidden="true"></span> ' +
+                    (stacked ? 'Preview right' : 'Preview below');
+                updateResizerOrientation();
+                editor.layout();
+            }
+            [editorPane, previewPane].forEach(function (pane) {
+                const tab = pane.querySelector('header');
+                tab.addEventListener('dragstart', function (event) {
+                    draggedPane = pane;
+                    shell.classList.add('dw-monaco-tab-dragging');
+                    event.dataTransfer.effectAllowed = 'move';
+                    event.dataTransfer.setData('text/plain', pane.className);
+                });
+                tab.addEventListener('dragend', function () {
+                    draggedPane = null;
+                    shell.classList.remove('dw-monaco-tab-dragging');
+                    clearDropTarget();
+                });
+            });
+            workspace.addEventListener('dragover', function (event) {
+                if (!draggedPane) return;
+                const pane = event.target.closest('.dw-monaco-pane');
+                if (!pane || pane === draggedPane) return;
+                const bounds = pane.getBoundingClientRect();
+                const distances = {
+                    left: event.clientX - bounds.left,
+                    right: bounds.right - event.clientX,
+                    top: event.clientY - bounds.top,
+                    bottom: bounds.bottom - event.clientY
+                };
+                const edge = Object.keys(distances).reduce(function (best, current) {
+                    return distances[current] < distances[best] ? current : best;
+                }, 'left');
+                clearDropTarget();
+                dropPane = pane;
+                dropEdge = edge;
+                pane.dataset.dropEdge = edge;
+                event.dataTransfer.dropEffect = 'move';
+                event.preventDefault();
+            });
+            workspace.addEventListener('drop', function (event) {
+                if (!draggedPane || !dropPane || !dropEdge) return;
+                const first = dropEdge === 'left' || dropEdge === 'top' ? draggedPane : dropPane;
+                const second = first === editorPane ? previewPane : editorPane;
+                arrangePanes(first, second, dropEdge === 'top' || dropEdge === 'bottom');
+                clearDropTarget();
+                event.preventDefault();
             });
 
             let resizing = false;

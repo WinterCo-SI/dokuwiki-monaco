@@ -15,6 +15,42 @@ class action_plugin_monaco extends ActionPlugin
     public function register(EventHandler $controller): void
     {
         $controller->register_hook('TPL_METAHEADER_OUTPUT', 'BEFORE', $this, 'addPageFlag');
+        $controller->register_hook('AJAX_CALL_UNKNOWN', 'BEFORE', $this, 'renderPreview');
+    }
+
+    /** Render previews through DokuWiki so installed syntax plugins are applied. */
+    public function renderPreview(Event $event): void
+    {
+        if ($event->data !== 'plugin_monaco_preview') {
+            return;
+        }
+
+        $event->preventDefault();
+        $event->stopPropagation();
+
+        global $ID, $INPUT;
+
+        $page = cleanID($INPUT->post->str('id'));
+        if (!$page || auth_quickaclcheck($page) < AUTH_READ) {
+            http_response_code(403);
+            return;
+        }
+
+        $source = $INPUT->post->str('wikitext');
+        if (strlen($source) > 2 * 1024 * 1024) {
+            http_response_code(413);
+            return;
+        }
+
+        $previousId = $ID;
+        $ID = $page;
+        try {
+            $info = [];
+            header('Content-Type: text/html; charset=utf-8');
+            echo p_render('xhtml', p_get_instructions($source), $info);
+        } finally {
+            $ID = $previousId;
+        }
     }
 
     public function addPageFlag(Event $event): void
