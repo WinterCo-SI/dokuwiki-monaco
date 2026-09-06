@@ -269,6 +269,8 @@
 .dw-monaco-editor .monaco-editor .quick-input-widget,
 .dw-monaco-editor .monaco-editor .quick-input-widget input,
 .dw-monaco-editor .monaco-editor .quick-input-list .monaco-list-row,
+.dw-monaco-editor .monaco-editor .quick-input-list .monaco-icon-label,
+.dw-monaco-editor .monaco-editor .quick-input-list .monaco-icon-label *,
 .dw-monaco-editor .monaco-editor .quick-input-list .monaco-highlighted-label,
 .dw-monaco-editor .monaco-editor .quick-input-list .label-name,
 .dw-monaco-editor .monaco-editor .quick-input-list .label-description {
@@ -283,10 +285,16 @@
 
 .dw-monaco-editor .monaco-editor .quick-input-widget input,
 .dw-monaco-editor .monaco-editor .quick-input-list .monaco-list-row,
+.dw-monaco-editor .monaco-editor .quick-input-list .monaco-icon-label,
+.dw-monaco-editor .monaco-editor .quick-input-list .monaco-icon-label *,
 .dw-monaco-editor .monaco-editor .quick-input-list .monaco-highlighted-label,
 .dw-monaco-editor .monaco-editor .quick-input-list .label-name,
 .dw-monaco-editor .monaco-editor .quick-input-list .label-description {
     line-height: 22px !important;
+}
+
+.dw-monaco-editor .monaco-editor .quick-input-box input {
+    padding: 4px !important;
 }
 
 .dw-monaco-pane {
@@ -452,8 +460,25 @@
     border-top: 1px solid var(--vscode-statusBar-border);
     background: var(--vscode-statusBar-background);
     color: var(--vscode-statusBar-foreground);
-    font: 10px/22px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: 400 10px/22px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
     user-select: none;
+}
+
+.dw-monaco-statusbar .dw-monaco-status,
+.dw-monaco-statusbar .dw-monaco-status-item,
+.dw-monaco-statusbar .dw-monaco-position,
+.dw-monaco-statusbar .dw-monaco-status-button,
+.dw-monaco-statusbar .dw-monaco-format-control,
+.dw-monaco-statusbar .dw-monaco-format-control select {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+    font-size: 10px !important;
+    font-style: normal !important;
+    font-weight: 400 !important;
+    line-height: 22px !important;
+}
+
+.dw-monaco-statusbar .codicon {
+    font-size: 12px !important;
 }
 
 .dw-monaco-statusbar .dw-monaco-status {
