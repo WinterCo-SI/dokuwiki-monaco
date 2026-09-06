@@ -457,7 +457,7 @@
             let lastSelection = editor.getSelection();
             editor.onDidChangeCursorSelection(function (event) {
                 lastSelection = event.selection;
-                positionStatus.textContent = 'Ln ' + event.position.lineNumber + ', Col ' + event.position.column;
+                positionStatus.textContent = 'Ln ' + event.selection.positionLineNumber + ', Col ' + event.selection.positionColumn;
             });
 
             function prepareToolbarEdit() {
