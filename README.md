@@ -26,12 +26,16 @@ unchanged, and Ctrl/Cmd+S triggers Save.
 
 Choose `local`, `cdnjs`, or `jsdelivr` under **Configuration Settings → Monaco
 Editor → Asset source**. Local is the default. Monaco's distribution files are
-not committed to this repository; download them on demand by running
-`bin/update-assets.ps1` from the plugin directory before deploying (npm, `tar`,
-and network access are required):
+not committed to this repository; download them on demand by running the
+PowerShell or Bash updater from the plugin directory before deploying (npm,
+`tar`, and network access are required):
 
 ```powershell
 .\bin\update-assets.ps1
+```
+
+```bash
+bash ./bin/update-assets.sh
 ```
 
 The script downloads the pinned Monaco, Marked, DOMPurify, and Codicons
@@ -41,10 +45,11 @@ instead; those modes load Monaco from the pinned CDN URLs. If loading fails,
 the original DokuWiki textarea remains available.
 
 CDNJS and jsDelivr versions are pinned. Every directly inserted CDN script has
-a SHA-384 SRI value and `crossorigin="anonymous"`. Run `bin/update-sri.ps1` to
-download those exact CDN files, recompute their hashes, and update the local
-`conf/sri.json` manifest. Review and commit the manifest change alongside any
-version or URL change.
+a SHA-384 SRI value and `crossorigin="anonymous"`. Run `bin/update-sri.ps1` or
+`bin/update-sri.sh` to download those exact CDN files, recompute their hashes,
+and update the local `conf/sri.json` manifest. The Bash script requires `curl`
+and OpenSSL. Review and commit the manifest change alongside any version or URL
+change.
 
 ## Notes
 

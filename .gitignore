@@ -1,2 +1,2 @@
-# Monaco is a generated distribution asset. Fetch it with bin/update-assets.ps1.
+# Monaco is a generated distribution asset. Fetch it with bin/update-assets.ps1 or bin/update-assets.sh.
 /vendor/monaco/
