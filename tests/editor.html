@@ -14,6 +14,7 @@
         .dokuwiki li { margin: 0.5em 0; }
         .dokuwiki input { padding: 6px 12px; line-height: 1.5; }
         .dokuwiki label { display: inline-block; max-width: 100%; margin-bottom: 5px; font-weight: 700; }
+        body.dokuwiki .dw-content div, body.dokuwiki .dw-content p { font-size: 12pt; line-height: 1.5em; }
     </style>
     <link id="plugin-styles" rel="stylesheet" href="../style.css">
     <script>
@@ -40,12 +41,12 @@
     </script>
     <script defer src="../script.js"></script>
 </head>
-<body>
+<body class="dokuwiki">
     <h1>Monaco status bar regression checks</h1>
     <p>Serve the repository over HTTP after installing the pinned local assets.</p>
     <button id="run" type="button">Run regression checks</button>
     <pre id="results" role="status">Ready to run.</pre>
-    <form class="dokuwiki">
+    <form class="dokuwiki dw-content">
         <textarea id="wiki__text">====== Example ======
   * First item
   * Second item

@@ -28,6 +28,11 @@
             body.style.fontFamily = getComputedStyle(widget).fontFamily;
             const copy = frame.contentDocument.importNode(widget, true);
             body.appendChild(copy);
+            const actualInput = getComputedStyle(widget.querySelector('.quick-input-box input'));
+            const nativeInput = frame.contentWindow.getComputedStyle(copy.querySelector('.quick-input-box input'));
+            for (const property of ['fontSize', 'fontFamily', 'fontWeight', 'fontStyle', 'lineHeight', 'letterSpacing']) {
+                assert(actualInput[property] === nativeInput[property], 'Picker input ' + property + ' matches native Monaco');
+            }
             for (const selector of ['.quick-input-titlebar', '.quick-input-header', '.quick-input-box input', '.monaco-list-row', '.quick-input-list-entry', '.quick-input-list-label', '.monaco-keybinding-key']) {
                 const actual = widget.querySelector(selector);
                 const native = copy.querySelector(selector);
@@ -86,6 +91,9 @@
             assert(input.items.some(function (item) { return item.id === 'editor.action.indentationToTabs'; }), 'Native indentation action menu opens');
             await new Promise(requestAnimationFrame);
             const widget = shell.querySelector('.quick-input-widget');
+            assert(getComputedStyle(widget.parentElement).backgroundColor === 'rgba(0, 0, 0, 0)' &&
+                getComputedStyle(widget.parentElement).pointerEvents === 'none',
+                'Picker host leaves editor content visible and interactive');
             assert(widget.querySelector('.quick-input-titlebar').getBoundingClientRect().height === 0, 'Untitled picker has no title-bar height under wiki styles');
             const inputElement = widget.querySelector('.quick-input-box input');
             assert(getComputedStyle(inputElement).boxSizing === 'border-box', 'Native input uses border-box dimensions');
@@ -153,6 +161,15 @@
             const editorPane = shell.querySelector('.dw-monaco-editor-pane');
             const previewPane = shell.querySelector('.dw-monaco-preview-pane');
             const divider = shell.querySelector('.dw-monaco-resizer');
+            async function checkPickerPosition() {
+                await new Promise(requestAnimationFrame);
+                const bounds = widget.getBoundingClientRect();
+                const area = workspace.getBoundingClientRect();
+                assert(Math.abs((bounds.left + bounds.right) / 2 - (area.left + area.right) / 2) < 1 &&
+                    Math.abs(bounds.top - area.top) < 1 &&
+                    Math.abs(bounds.width - Math.min(workspace.clientWidth * 0.62, 600)) < 1 &&
+                    !widget.closest('.dw-monaco-pane'), 'Picker is centered and sized across the entire workspace');
+            }
             function dragTab(tab, target, x, y, beforeDrop) {
                 const dataTransfer = new DataTransfer();
                 tab.dispatchEvent(new DragEvent('dragstart', {bubbles: true, dataTransfer: dataTransfer}));
@@ -202,7 +219,26 @@
                             Math.abs(a.top - b.top) < 1 && Math.abs(a.left - b.left) > 10),
                         (tab === editorTab ? 'Active' : 'Inactive') + ' tab creates a ' + edge + ' split');
                     assert(divider.getAttribute('aria-orientation') === (stacked ? 'horizontal' : 'vertical'), 'Divider matches split direction');
+                    for (const button of [indentation, language]) {
+                        button.click();
+                        await picker(button === indentation ? 'Select action' : 'Select Language Mode');
+                        await checkPickerPosition();
+                        currentPicker().hide();
+                    }
+                    await editor.getAction('editor.action.quickCommand').run();
+                    await until(function () { return currentPicker(); });
+                    await checkPickerPosition();
                     divider.dispatchEvent(new KeyboardEvent('keydown', {key: stacked ? 'ArrowDown' : 'ArrowRight', bubbles: true}));
+                    await checkPickerPosition();
+                    if (tab === previewTab && edge === 'bottom') {
+                        shell.querySelector('.dw-monaco-maximize').click();
+                        await new Promise(requestAnimationFrame);
+                        await checkPickerPosition();
+                        shell.querySelector('.dw-monaco-maximize').click();
+                        await new Promise(requestAnimationFrame);
+                        await checkPickerPosition();
+                    }
+                    currentPicker().hide();
                     assert(shell.querySelectorAll('.dw-monaco-tabstrip').length === 2 &&
                         !workspace.querySelector(':scope > .dw-monaco-tabstrip'), 'Split contains two group tab strips');
                     for (const [pane, ownTab] of [[editorPane, editorTab], [previewPane, previewTab]]) {

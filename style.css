@@ -269,6 +269,7 @@
 body:has(.dw-monaco-shell.dw-monaco-maximized) { overflow: hidden; }
 
 .dw-monaco-workspace {
+    position: relative;
     display: flex;
     flex-direction: column;
     grid-template-columns: minmax(0, var(--dw-monaco-editor-size, 50%)) 5px minmax(0, 1fr);
@@ -276,6 +277,24 @@ body:has(.dw-monaco-shell.dw-monaco-maximized) { overflow: hidden; }
     max-height: 760px;
     min-height: 360px;
 }
+
+.dw-monaco-picker-host {
+    position: absolute;
+    z-index: 30;
+    inset: 0;
+    pointer-events: none;
+}
+
+.dw-monaco-picker-host > .monaco-editor {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    background: transparent;
+    outline: none;
+}
+
+.dw-monaco-picker-host > .monaco-editor > * { pointer-events: auto; }
 
 .dw-monaco-tabstrip {
     display: flex;
@@ -319,6 +338,8 @@ body:has(.dw-monaco-shell.dw-monaco-maximized) { overflow: hidden; }
     margin: 0;
     padding: 0;
     font: inherit;
+    /* Align the text's visual center with the Codicon glyph. */
+    transform: translateY(-1px);
 }
 .dw-monaco-tabstrip > header.dw-monaco-active-tab { border-top: 1px solid var(--vscode-focusBorder); background: var(--vscode-tab-activeBackground); color: #fff; }
 .dw-monaco-tabstrip > header:not(.dw-monaco-active-tab) { border-top: 1px solid transparent; }
@@ -399,6 +420,11 @@ body:has(.dw-monaco-shell.dw-monaco-maximized) { overflow: hidden; }
 }
 
 .dw-monaco-editor .monaco-editor .quick-input-widget,
+.dw-monaco-editor .monaco-editor .quick-input-header,
+.dw-monaco-editor .monaco-editor .quick-input-box,
+.dw-monaco-editor .monaco-editor .quick-input-box .monaco-inputbox,
+.dw-monaco-editor .monaco-editor .quick-input-box .ibwrapper,
+.dw-monaco-editor .monaco-editor .quick-input-list-entry,
 .dw-monaco-editor .monaco-editor .quick-input-list .monaco-list-row,
 .dw-monaco-editor .monaco-editor .quick-input-list .monaco-icon-label,
 .dw-monaco-editor .monaco-editor .quick-input-list .monaco-icon-label *,
@@ -414,6 +440,7 @@ body:has(.dw-monaco-shell.dw-monaco-maximized) { overflow: hidden; }
     text-transform: none !important;
 }
 
+.dw-monaco-editor .monaco-editor .quick-input-list-entry,
 .dw-monaco-editor .monaco-editor .quick-input-list .monaco-list-row,
 .dw-monaco-editor .monaco-editor .quick-input-list .monaco-icon-label,
 .dw-monaco-editor .monaco-editor .quick-input-list .monaco-icon-label *,
@@ -425,6 +452,22 @@ body:has(.dw-monaco-shell.dw-monaco-maximized) { overflow: hidden; }
 
 .dw-monaco-editor .monaco-editor .quick-input-widget {
     line-height: normal;
+}
+
+/* The wiki template sizes every content div, including the input's wrappers. */
+.dw-monaco-editor .monaco-editor .quick-input-header,
+.dw-monaco-editor .monaco-editor .quick-input-box,
+.dw-monaco-editor .monaco-editor .quick-input-box .monaco-inputbox,
+.dw-monaco-editor .monaco-editor .quick-input-box .ibwrapper {
+    line-height: normal !important;
+}
+
+.dw-monaco-editor .monaco-editor .quick-input-list-rows,
+.dw-monaco-editor .monaco-editor .quick-input-list-row,
+.dw-monaco-editor .monaco-editor .quick-input-list-separator,
+.dw-monaco-editor .monaco-editor .quick-input-list-entry-keybinding {
+    font-size: inherit !important;
+    line-height: inherit !important;
 }
 
 /* Wiki form-label margins must not change the height of a picker row. */

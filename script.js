@@ -479,7 +479,14 @@
             });
             registerDokuWikiLanguage(monaco);
 
+            const pickerHost = document.createElement('div');
+            pickerHost.className = 'dw-monaco-editor dw-monaco-picker-host';
+            const pickerContainer = document.createElement('div');
+            pickerContainer.className = 'monaco-editor vs-dark';
+            pickerHost.appendChild(pickerContainer);
+            workspace.appendChild(pickerHost);
             editor = monaco.editor.create(editorNode, {
+                overflowWidgetsDomNode: pickerContainer,
                 value: textarea.value,
                 language: initialLanguage,
                 automaticLayout: true,
@@ -509,6 +516,32 @@
                     resolve(services.StandaloneServices.get(quickInputModule.IQuickInputService));
                 }, reject);
             });
+            let pickerHostConfigured = false;
+            function configurePickerHost() {
+                if (pickerHostConfigured) return;
+                pickerHostConfigured = true;
+                // Monaco 0.52.2 uses an editor-scoped host; the workbench picker spans all groups.
+                const service = quickInput.activeService;
+                service.host = {
+                    ...service.host,
+                    mainContainer: pickerContainer,
+                    activeContainer: pickerContainer,
+                    containers: [pickerContainer],
+                    getContainer: function () { return pickerContainer; },
+                    get mainContainerDimension() { return {width: workspace.clientWidth, height: workspace.clientHeight}; },
+                    get activeContainerDimension() { return this.mainContainerDimension; },
+                    onDidLayoutActiveContainer: function (listener) {
+                        const observer = new ResizeObserver(function () {
+                            listener({width: workspace.clientWidth, height: workspace.clientHeight});
+                        });
+                        observer.observe(workspace);
+                        return {dispose: function () { observer.disconnect(); }};
+                    }
+                };
+            }
+            editor.onDidFocusEditorWidget(configurePickerHost);
+            if (editor.hasWidgetFocus()) configurePickerHost();
+            editor.onDidDispose(function () { pickerHost.remove(); });
             const languageModes = [
                 {id: 'dokuwiki', label: 'DokuWiki'},
                 {id: 'markdown', label: 'Markdown', description: 'GitHub Flavored Markdown'}
