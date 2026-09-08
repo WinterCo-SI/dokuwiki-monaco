@@ -117,7 +117,7 @@
     box-sizing: border-box !important;
     display: inline-flex !important;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     float: none !important;
     width: 26px !important;
     min-width: 0 !important;
@@ -235,12 +235,52 @@
 }
 
 .dw-monaco-workspace {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     grid-template-columns: minmax(0, var(--dw-monaco-editor-size, 50%)) 5px minmax(0, 1fr);
     height: 72vh;
     max-height: 760px;
     min-height: 360px;
 }
+
+.dw-monaco-tabstrip {
+    display: flex;
+    align-items: stretch;
+    height: 35px;
+    background: var(--vscode-editorGroupHeader-tabsBackground);
+    border-bottom: 1px solid var(--vscode-tab-border);
+}
+.dw-monaco-tabstrip > header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    box-sizing: border-box;
+    height: 35px;
+    min-width: fit-content;
+    flex: 0 0 auto;
+    margin: 0 !important;
+    padding: 0 10px !important;
+    border-right: 1px solid var(--vscode-tab-border);
+    background: var(--vscode-tab-inactiveBackground);
+    color: var(--vscode-descriptionForeground);
+    cursor: grab;
+    font: 13px/19px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    white-space: nowrap;
+}
+.dw-monaco-tabstrip > .dw-monaco-editor-pane-tab { border-top: 1px solid var(--vscode-focusBorder); background: var(--vscode-tab-activeBackground); color: #fff; }
+.dw-monaco-tabstrip > header.dw-monaco-active-tab { border-top: 1px solid var(--vscode-focusBorder); background: var(--vscode-tab-activeBackground); color: #fff; }
+.dw-monaco-tabstrip > header:not(.dw-monaco-active-tab) { border-top: 1px solid transparent; }
+.dw-monaco-workspace > .dw-monaco-pane {
+    flex: 1;
+}
+.dw-monaco-workspace > .dw-monaco-resizer { display: none; }
+.dw-monaco-workspace > .dw-monaco-pane:not(.dw-monaco-active-tab) {
+    display: none;
+}
+.dw-monaco-workspace > .dw-monaco-pane.dw-monaco-active-tab {
+    display: flex;
+}
+
 
 .dw-monaco-editor .monaco-editor,
 .dw-monaco-editor .monaco-editor *,

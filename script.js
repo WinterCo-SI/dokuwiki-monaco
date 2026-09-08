@@ -324,9 +324,7 @@
             '<span class="dw-monaco-brand"><span class="codicon codicon-code" aria-hidden="true"></span></span>' +
             '<span class="dw-monaco-file">' + escapeHtml(pageName) + '</span>' +
             '<div class="dw-monaco-commandbar"></div>' +
-            '<div class="dw-monaco-controls">' +
-            '<button type="button" class="dw-monaco-preview-toggle" aria-pressed="false"><span class="codicon codicon-eye-closed" aria-hidden="true"></span> Hide preview</button>' +
-            '</div></div>' +
+            '<div class="dw-monaco-controls"></div></div>' +
             '<div class="dw-monaco-workspace">' +
             '<section class="dw-monaco-pane dw-monaco-editor-pane"><header draggable="true" role="tab" title="Drag to move editor"><span class="codicon codicon-code" aria-hidden="true"></span>' + escapeHtml(pageName) + '</header><div class="dw-monaco-editor"></div></section>' +
             '<div class="dw-monaco-resizer" role="separator" tabindex="0" aria-label="Resize editor and preview" aria-orientation="vertical"></div>' +
@@ -336,6 +334,14 @@
             '<button type="button" class="dw-monaco-word-wrap dw-monaco-status-button" aria-pressed="true" title="Toggle word wrap"><span class="codicon codicon-word-wrap" aria-hidden="true"></span> Wrap</button>' +
             '<label class="dw-monaco-format-control"><span class="codicon codicon-symbol-enum" aria-hidden="true"></span><span>Format</span><select class="dw-monaco-format"><option value="dokuwiki">DokuWiki</option><option value="markdown">GitHub Markdown</option></select></label></div>';
         textarea.parentNode.insertBefore(shell, textarea.nextSibling);
+        const workspace = shell.querySelector('.dw-monaco-workspace');
+        const tabStrip = document.createElement('div');
+        tabStrip.className = 'dw-monaco-tabstrip';
+        workspace.insertBefore(tabStrip, workspace.firstChild);
+        workspace.querySelectorAll('.dw-monaco-pane > header').forEach(function (header) {
+            header.classList.add(header.parentElement.classList.contains('dw-monaco-editor-pane') ? 'dw-monaco-editor-pane-tab' : 'dw-monaco-preview-pane-tab');
+            tabStrip.appendChild(header);
+        });
 
         const dokuToolbar = document.getElementById('tool__bar');
         if (dokuToolbar) {
@@ -405,12 +411,26 @@
         const preview = shell.querySelector('.dw-monaco-preview');
         const format = shell.querySelector('.dw-monaco-format');
         const status = shell.querySelector('.dw-monaco-status');
-        const previewButton = shell.querySelector('.dw-monaco-preview-toggle');
         const wordWrapButtons = shell.querySelectorAll('.dw-monaco-word-wrap');
-        const workspace = shell.querySelector('.dw-monaco-workspace');
         const resizer = shell.querySelector('.dw-monaco-resizer');
         const editorPane = shell.querySelector('.dw-monaco-editor-pane');
         const previewPane = shell.querySelector('.dw-monaco-preview-pane');
+        editorPane.classList.add('dw-monaco-active-tab');
+        function activatePane(pane) {
+            [editorPane, previewPane].forEach(function (candidate) {
+                candidate.classList.toggle('dw-monaco-active-tab', candidate === pane);
+            });
+            tabStrip.querySelectorAll('header').forEach(function (header) {
+                const isEditorTab = header.classList.contains('dw-monaco-editor-pane-tab');
+                header.classList.toggle('dw-monaco-active-tab', isEditorTab === (pane === editorPane));
+            });
+            editor.layout();
+        }
+        tabStrip.querySelectorAll('header').forEach(function (header) {
+            header.addEventListener('click', function () {
+                activatePane(header.classList.contains('dw-monaco-editor-pane-tab') ? editorPane : previewPane);
+            });
+        });
         const positionStatus = shell.querySelector('.dw-monaco-position');
         const sizeControl = document.getElementById('size__ctl') || document.querySelector('.size__ctl');
         const savedHeight = typeof DokuCookie !== 'undefined' ? parseFloat(DokuCookie.getValue('sizeCtl')) : NaN;
@@ -600,13 +620,6 @@
                     });
                 });
             });
-            previewButton.addEventListener('click', function () {
-                const hidden = shell.classList.toggle('dw-monaco-preview-hidden');
-                previewButton.innerHTML = '<span class="codicon ' + (hidden ? 'codicon-open-preview' : 'codicon-eye-closed') + '" aria-hidden="true"></span> ' +
-                    (hidden ? 'Show preview' : 'Hide preview');
-                previewButton.setAttribute('aria-pressed', String(hidden));
-                editor.layout();
-            });
 
             let draggedPane = null;
             let dropPane = null;
@@ -627,7 +640,7 @@
                 editor.layout();
             }
             [editorPane, previewPane].forEach(function (pane) {
-                const tab = pane.querySelector('header');
+            const tab = tabStrip.querySelector(pane.classList.contains('dw-monaco-editor-pane') ? '.dw-monaco-editor-pane-tab' : '.dw-monaco-preview-pane-tab');
                 tab.addEventListener('dragstart', function (event) {
                     draggedPane = pane;
                     shell.classList.add('dw-monaco-tab-dragging');
@@ -645,7 +658,18 @@
             workspace.addEventListener('dragover', function (event) {
                 if (!draggedPane) return;
                 const pane = event.target.closest('.dw-monaco-pane');
-                if (!pane || pane === draggedPane) return;
+                if (!pane) {
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = 'move';
+                    return;
+                }
+                if (pane === draggedPane) {
+                    // Keep the drag active while crossing the source pane; this
+                    // mirrors VS Code's internal tab drag behavior.
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = 'move';
+                    return;
+                }
                 const bounds = pane.getBoundingClientRect();
                 const distances = {
                     left: event.clientX - bounds.left,
@@ -664,7 +688,16 @@
                 event.preventDefault();
             });
             workspace.addEventListener('drop', function (event) {
-                if (!draggedPane || !dropPane || !dropEdge) return;
+                if (!draggedPane) return;
+                if (!dropPane || !dropEdge) {
+                    event.preventDefault();
+                    return;
+                }
+                const draggedTab = tabStrip.querySelector(draggedPane.classList.contains('dw-monaco-editor-pane') ? '.dw-monaco-editor-pane-tab' : '.dw-monaco-preview-pane-tab');
+                const targetTab = tabStrip.querySelector(dropPane.classList.contains('dw-monaco-editor-pane') ? '.dw-monaco-editor-pane-tab' : '.dw-monaco-preview-pane-tab');
+                if (draggedTab && targetTab && draggedTab !== targetTab) {
+                    tabStrip.insertBefore(draggedTab, dropEdge === 'left' || dropEdge === 'top' ? targetTab : targetTab.nextSibling);
+                }
                 const first = dropEdge === 'left' || dropEdge === 'top' ? draggedPane : dropPane;
                 const second = first === editorPane ? previewPane : editorPane;
                 arrangePanes(first, second, dropEdge === 'top' || dropEdge === 'bottom');
