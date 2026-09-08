@@ -44,6 +44,8 @@
 
 .dw-monaco-titlebar,
 .dw-monaco-titlebar *,
+.dw-monaco-tabstrip,
+.dw-monaco-tabstrip *,
 .dw-monaco-pane > header,
 .dw-monaco-pane > header *,
 .dw-monaco-statusbar,
@@ -234,6 +236,38 @@
     background: rgba(255, 255, 255, 0.1);
 }
 
+.dw-monaco-maximize { white-space: nowrap; }
+
+.dw-monaco-shell.dw-monaco-maximized {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    z-index: 10000;
+    inset: 0;
+    width: auto;
+    height: 100vh;
+    height: 100dvh;
+    margin: 0;
+    border: 0;
+    box-shadow: none;
+}
+
+.dw-monaco-shell.dw-monaco-maximized .dw-monaco-workspace {
+    /* Override the saved inline height while keeping it for restore. */
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0;
+    flex: 1;
+}
+
+.dw-monaco-maximized .dw-monaco-titlebar,
+.dw-monaco-maximized .dw-monaco-statusbar,
+.dw-monaco-maximized .dw-monaco-tabstrip {
+    flex-shrink: 0;
+}
+
+body:has(.dw-monaco-shell.dw-monaco-maximized) { overflow: hidden; }
+
 .dw-monaco-workspace {
     display: flex;
     flex-direction: column;
@@ -246,6 +280,7 @@
 .dw-monaco-tabstrip {
     display: flex;
     align-items: stretch;
+    flex-shrink: 0;
     height: 35px;
     background: var(--vscode-editorGroupHeader-tabsBackground);
     border-bottom: 1px solid var(--vscode-tab-border);
@@ -254,6 +289,7 @@
     display: flex;
     align-items: center;
     justify-content: flex-start;
+    gap: 6px;
     box-sizing: border-box;
     height: 35px;
     min-width: fit-content;
@@ -264,8 +300,24 @@
     background: var(--vscode-tab-inactiveBackground);
     color: var(--vscode-descriptionForeground);
     cursor: grab;
-    font: 13px/19px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: 400 13px/19px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
     white-space: nowrap;
+}
+.dw-monaco-tabstrip > header > .codicon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 16px;
+    height: 16px;
+    margin: 0;
+    color: #75beff;
+    font-size: 16px;
+    line-height: 1;
+}
+.dw-monaco-tabstrip > header > .dw-monaco-tab-caption {
+    margin: 0;
+    padding: 0;
+    font: inherit;
 }
 .dw-monaco-tabstrip > .dw-monaco-editor-pane-tab { border-top: 1px solid var(--vscode-focusBorder); background: var(--vscode-tab-activeBackground); color: #fff; }
 .dw-monaco-tabstrip > header.dw-monaco-active-tab { border-top: 1px solid var(--vscode-focusBorder); background: var(--vscode-tab-activeBackground); color: #fff; }

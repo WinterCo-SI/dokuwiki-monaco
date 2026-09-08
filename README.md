@@ -55,6 +55,8 @@ change.
 ## Notes
 
 - The selected format is stored locally in the browser.
+- Click **Maximize** in the title bar to fill the browser window. Click **Restore**
+  or press Escape to return to the previous editor size.
 - Format selection affects editing and live preview only. Saving still writes
   the editor text to DokuWiki's standard `wikitext` field.
 - Drag either tab toward an edge of the other pane to move it or switch between

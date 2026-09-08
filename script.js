@@ -324,17 +324,33 @@
             '<span class="dw-monaco-brand"><span class="codicon codicon-code" aria-hidden="true"></span></span>' +
             '<span class="dw-monaco-file">' + escapeHtml(pageName) + '</span>' +
             '<div class="dw-monaco-commandbar"></div>' +
-            '<div class="dw-monaco-controls"></div></div>' +
+            '<div class="dw-monaco-controls"><button type="button" class="dw-monaco-maximize" aria-pressed="false" title="Maximize editor"><span class="codicon codicon-screen-full" aria-hidden="true"></span></button></div></div>' +
             '<div class="dw-monaco-workspace">' +
-            '<section class="dw-monaco-pane dw-monaco-editor-pane"><header draggable="true" role="tab" title="Drag to move editor"><span class="codicon codicon-code" aria-hidden="true"></span>' + escapeHtml(pageName) + '</header><div class="dw-monaco-editor"></div></section>' +
+            '<section class="dw-monaco-pane dw-monaco-editor-pane"><header draggable="true" role="tab" title="Drag to move editor"><span class="codicon codicon-code" aria-hidden="true"></span><span class="dw-monaco-tab-caption">' + escapeHtml(pageName) + '</span></header><div class="dw-monaco-editor"></div></section>' +
             '<div class="dw-monaco-resizer" role="separator" tabindex="0" aria-label="Resize editor and preview" aria-orientation="vertical"></div>' +
-            '<section class="dw-monaco-pane dw-monaco-preview-pane"><header draggable="true" role="tab" title="Drag to move preview"><span class="codicon codicon-open-preview" aria-hidden="true"></span>Preview</header><div class="dw-monaco-preview" aria-live="polite"></div></section>' +
+            '<section class="dw-monaco-pane dw-monaco-preview-pane"><header draggable="true" role="tab" title="Drag to move preview"><span class="codicon codicon-open-preview" aria-hidden="true"></span><span class="dw-monaco-tab-caption">Preview</span></header><div class="dw-monaco-preview" aria-live="polite"></div></section>' +
             '</div><div class="dw-monaco-statusbar"><span class="dw-monaco-status-item"><span class="codicon codicon-code" aria-hidden="true"></span> DokuWiki</span><span class="dw-monaco-status" role="status">Loading editor…</span>' +
             '<span class="dw-monaco-position">Ln 1, Col 1</span><span class="dw-monaco-status-item">Spaces: 2</span><span class="dw-monaco-status-item">UTF-8</span>' +
             '<button type="button" class="dw-monaco-word-wrap dw-monaco-status-button" aria-pressed="true" title="Toggle word wrap"><span class="codicon codicon-word-wrap" aria-hidden="true"></span> Wrap</button>' +
             '<label class="dw-monaco-format-control"><span class="codicon codicon-symbol-enum" aria-hidden="true"></span><span>Format</span><select class="dw-monaco-format"><option value="dokuwiki">DokuWiki</option><option value="markdown">GitHub Markdown</option></select></label></div>';
         textarea.parentNode.insertBefore(shell, textarea.nextSibling);
         const workspace = shell.querySelector('.dw-monaco-workspace');
+        const maximizeButton = shell.querySelector('.dw-monaco-maximize');
+        function setMaximized(maximized) {
+            shell.classList.toggle('dw-monaco-maximized', maximized);
+            maximizeButton.setAttribute('aria-pressed', String(maximized));
+            maximizeButton.title = maximized ? 'Restore editor size' : 'Maximize editor';
+            maximizeButton.querySelector('.dw-monaco-maximize-label').textContent = maximized ? 'Restore' : 'Maximize';
+            maximizeButton.querySelector('.codicon').className = 'codicon ' + (maximized ? 'codicon-screen-normal' : 'codicon-screen-full');
+        }
+        maximizeButton.addEventListener('click', function () {
+            setMaximized(!shell.classList.contains('dw-monaco-maximized'));
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && !event.defaultPrevented && shell.classList.contains('dw-monaco-maximized')) {
+                setMaximized(false);
+            }
+        });
         const tabStrip = document.createElement('div');
         tabStrip.className = 'dw-monaco-tabstrip';
         workspace.insertBefore(tabStrip, workspace.firstChild);
