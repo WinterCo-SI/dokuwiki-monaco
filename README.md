@@ -54,6 +54,8 @@ change.
 
 ## Notes
 
+- Ctrl+click (Cmd+click on macOS) adds another cursor; Ctrl/Cmd+drag extends
+  its selection. Alt+drag or middle-button dragging selects a rectangular block.
 - Click the language name in the status bar to open **Select Language Mode**.
   Choose DokuWiki or Markdown; the initial mode is detected from the page content.
 - Click **Spaces: 2** (or the current indentation setting) to open **Select action**.
@@ -63,8 +65,9 @@ change.
   or press Escape to return to the previous editor size.
 - Format selection affects editing and live preview only. Saving still writes
   the editor text to DokuWiki's standard `wikitext` field.
-- Drag either tab toward an edge of the other pane to move it or switch between
-  a side-by-side and stacked layout.
+- Drag either tab into the content area near an edge to split the editor and
+  preview side by side or vertically. Drag a tab back onto the tab strip to
+  return to a single pane.
 - External links and images in preview may make normal browser requests to
   their targets. DokuWiki previews also make a same-origin request to the wiki.
 

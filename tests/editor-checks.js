@@ -28,7 +28,7 @@
             body.style.fontFamily = getComputedStyle(widget).fontFamily;
             const copy = frame.contentDocument.importNode(widget, true);
             body.appendChild(copy);
-            for (const selector of ['.quick-input-titlebar', '.quick-input-header', '.quick-input-box input', '.monaco-list-row', '.monaco-keybinding-key']) {
+            for (const selector of ['.quick-input-titlebar', '.quick-input-header', '.quick-input-box input', '.monaco-list-row', '.quick-input-list-entry', '.quick-input-list-label', '.monaco-keybinding-key']) {
                 const actual = widget.querySelector(selector);
                 const native = copy.querySelector(selector);
                 if (actual && native) {
@@ -36,6 +36,22 @@
                         selector + ' height matches unmodified Monaco CSS');
                 }
             }
+            const actualLabels = widget.querySelectorAll('.label-name');
+            const nativeLabels = copy.querySelectorAll('.label-name');
+            actualLabels.forEach(function (label, index) {
+                const nativeLabel = nativeLabels[index];
+                const row = label.closest('.monaco-list-row').getBoundingClientRect();
+                const nativeRow = nativeLabel.closest('.monaco-list-row').getBoundingClientRect();
+                const actualRange = document.createRange();
+                actualRange.selectNodeContents(label);
+                const nativeRange = frame.contentDocument.createRange();
+                nativeRange.selectNodeContents(nativeLabel);
+                const actualBounds = actualRange.getBoundingClientRect();
+                const nativeBounds = nativeRange.getBoundingClientRect();
+                assert(Math.abs((actualBounds.top - row.top) - (nativeBounds.top - nativeRow.top)) < 0.1 &&
+                    Math.abs((row.bottom - actualBounds.bottom) - (nativeRow.bottom - nativeBounds.bottom)) < 0.1,
+                    'Text alignment matches native row: ' + label.textContent);
+            });
         } finally { frame.remove(); }
     }
     document.getElementById('run').addEventListener('click', async function () {
@@ -132,6 +148,45 @@
             await new Promise(requestAnimationFrame);
             await compareNativeDimensions(widget);
             currentPicker().hide();
+            const editorTab = shell.querySelector('.dw-monaco-editor-pane-tab');
+            const previewTab = shell.querySelector('.dw-monaco-preview-pane-tab');
+            const editorPane = shell.querySelector('.dw-monaco-editor-pane');
+            const previewPane = shell.querySelector('.dw-monaco-preview-pane');
+            const divider = shell.querySelector('.dw-monaco-resizer');
+            function dragTab(tab, target, x, y) {
+                const dataTransfer = new DataTransfer();
+                tab.dispatchEvent(new DragEvent('dragstart', {bubbles: true, dataTransfer: dataTransfer}));
+                const options = {bubbles: true, cancelable: true, dataTransfer: dataTransfer, clientX: x, clientY: y};
+                target.dispatchEvent(new DragEvent('dragover', options));
+                target.dispatchEvent(new DragEvent('drop', options));
+                tab.dispatchEvent(new DragEvent('dragend', {bubbles: true, dataTransfer: dataTransfer}));
+            }
+            const sourceBeforeDrag = model.getValue();
+            for (const tab of [editorTab, previewTab]) {
+                for (const edge of ['left', 'right', 'top', 'bottom']) {
+                    editorTab.click();
+                    const bounds = editorPane.getBoundingClientRect();
+                    const x = edge === 'left' ? bounds.left + 10 : edge === 'right' ? bounds.right - 10 : bounds.left + bounds.width / 2;
+                    const y = edge === 'top' ? bounds.top + 10 : edge === 'bottom' ? bounds.bottom - 10 : bounds.top + bounds.height / 2;
+                    dragTab(tab, editorPane, x, y);
+                    await new Promise(requestAnimationFrame);
+                    const a = editorPane.getBoundingClientRect();
+                    const b = previewPane.getBoundingClientRect();
+                    const stacked = edge === 'top' || edge === 'bottom';
+                    assert(a.width > 0 && a.height > 0 && b.width > 0 && b.height > 0 &&
+                        (stacked ? Math.abs(a.left - b.left) < 1 && Math.abs(a.top - b.top) > 10 :
+                            Math.abs(a.top - b.top) < 1 && Math.abs(a.left - b.left) > 10),
+                        (tab === editorTab ? 'Active' : 'Inactive') + ' tab creates a ' + edge + ' split');
+                    assert(divider.getAttribute('aria-orientation') === (stacked ? 'horizontal' : 'vertical'), 'Divider matches split direction');
+                    divider.dispatchEvent(new KeyboardEvent('keydown', {key: stacked ? 'ArrowDown' : 'ArrowRight', bubbles: true}));
+                    const strip = shell.querySelector('.dw-monaco-tabstrip');
+                    const stripBounds = strip.getBoundingClientRect();
+                    dragTab(tab, strip, stripBounds.right - 10, stripBounds.top + 10);
+                    assert(!shell.classList.contains('dw-monaco-split'), 'Dropping on tab strip restores tabs');
+                }
+            }
+            editorTab.click();
+            assert(model.getValue() === sourceBeforeDrag, 'Tab dragging preserves document text');
             assert(errors.length === 0, 'No uncaught errors: ' + errors.join('; '));
             results.textContent += '\nAll checks passed.';
         } catch (error) {
