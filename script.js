@@ -632,7 +632,9 @@
                     draggedPane = pane;
                     shell.classList.add('dw-monaco-tab-dragging');
                     event.dataTransfer.effectAllowed = 'move';
-                    event.dataTransfer.setData('text/plain', pane.className);
+                    // Mark this as an internal pane move; exposing text/plain lets the
+                    // browser/editor treat the tab's class name as dropped content.
+                    event.dataTransfer.setData('application/x-dw-monaco-pane', pane.dataset.pane || '');
                 });
                 tab.addEventListener('dragend', function () {
                     draggedPane = null;

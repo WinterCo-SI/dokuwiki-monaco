@@ -356,12 +356,14 @@
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
+    /* VS Code normal tab height; padding matches tabs with close actions off. */
     height: 35px;
+    flex-shrink: 0;
     width: fit-content;
-    min-width: 120px;
+    min-width: fit-content;
     max-width: 280px;
     margin: 0 !important;
-    padding: 0 12px !important;
+    padding: 0 10px !important;
     overflow: hidden;
     border-right: 1px solid var(--vscode-tab-border);
     background: var(--vscode-tab-inactiveBackground);
