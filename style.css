@@ -320,7 +320,6 @@ body:has(.dw-monaco-shell.dw-monaco-maximized) { overflow: hidden; }
     padding: 0;
     font: inherit;
 }
-.dw-monaco-tabstrip > .dw-monaco-editor-pane-tab { border-top: 1px solid var(--vscode-focusBorder); background: var(--vscode-tab-activeBackground); color: #fff; }
 .dw-monaco-tabstrip > header.dw-monaco-active-tab { border-top: 1px solid var(--vscode-focusBorder); background: var(--vscode-tab-activeBackground); color: #fff; }
 .dw-monaco-tabstrip > header:not(.dw-monaco-active-tab) { border-top: 1px solid transparent; }
 .dw-monaco-workspace > .dw-monaco-pane {
@@ -337,11 +336,7 @@ body:has(.dw-monaco-shell.dw-monaco-maximized) { overflow: hidden; }
 .dw-monaco-split .dw-monaco-workspace {
     display: grid;
     grid-template-columns: minmax(0, var(--dw-monaco-editor-ratio, 1fr)) 5px minmax(0, var(--dw-monaco-preview-ratio, 1fr));
-    grid-template-rows: 35px minmax(0, 1fr);
-}
-
-.dw-monaco-split .dw-monaco-tabstrip {
-    grid-column: 1 / -1;
+    grid-template-rows: minmax(0, 1fr);
 }
 
 .dw-monaco-split .dw-monaco-workspace > .dw-monaco-pane {
@@ -357,7 +352,7 @@ body:has(.dw-monaco-shell.dw-monaco-maximized) { overflow: hidden; }
 
 .dw-monaco-split.dw-monaco-stacked .dw-monaco-workspace {
     grid-template-columns: 1fr;
-    grid-template-rows: 35px minmax(0, var(--dw-monaco-editor-ratio, 1fr)) 5px minmax(0, var(--dw-monaco-preview-ratio, 1fr));
+    grid-template-rows: minmax(0, var(--dw-monaco-editor-ratio, 1fr)) 5px minmax(0, var(--dw-monaco-preview-ratio, 1fr));
 }
 
 .dw-monaco-tabstrip > header:active,
@@ -568,6 +563,7 @@ body:has(.dw-monaco-shell.dw-monaco-maximized) { overflow: hidden; }
 .dw-monaco-pane[data-drop-edge="right"]::after { inset: 0 0 0 50%; }
 .dw-monaco-pane[data-drop-edge="top"]::after { inset: 0 0 50% 0; }
 .dw-monaco-pane[data-drop-edge="bottom"]::after { inset: 50% 0 0 0; }
+.dw-monaco-pane[data-drop-edge="center"]::after { inset: 35px 0 0; }
 .dw-monaco-tab-dragging .dw-monaco-pane > header { cursor: grabbing; }
 
 .dw-monaco-editor,

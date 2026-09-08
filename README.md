@@ -66,8 +66,8 @@ change.
 - Format selection affects editing and live preview only. Saving still writes
   the editor text to DokuWiki's standard `wikitext` field.
 - Drag either tab into the content area near an edge to split the editor and
-  preview side by side or vertically. Drag a tab back onto the tab strip to
-  return to a single pane.
+  preview side by side or vertically, each with its own tab strip. Drop a tab
+  onto the other group's tab strip or content center to merge them again.
 - External links and images in preview may make normal browser requests to
   their targets. DokuWiki previews also make a same-origin request to the wiki.
 

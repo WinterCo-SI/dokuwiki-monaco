@@ -179,11 +179,42 @@
                         (tab === editorTab ? 'Active' : 'Inactive') + ' tab creates a ' + edge + ' split');
                     assert(divider.getAttribute('aria-orientation') === (stacked ? 'horizontal' : 'vertical'), 'Divider matches split direction');
                     divider.dispatchEvent(new KeyboardEvent('keydown', {key: stacked ? 'ArrowDown' : 'ArrowRight', bubbles: true}));
-                    const strip = shell.querySelector('.dw-monaco-tabstrip');
+                    assert(shell.querySelectorAll('.dw-monaco-tabstrip').length === 2 &&
+                        !workspace.querySelector(':scope > .dw-monaco-tabstrip'), 'Split contains two group tab strips');
+                    for (const [pane, ownTab] of [[editorPane, editorTab], [previewPane, previewTab]]) {
+                        const ownStrip = pane.querySelector('.dw-monaco-tabstrip');
+                        const stripBounds = ownStrip.getBoundingClientRect();
+                        const paneBounds = pane.getBoundingClientRect();
+                        assert(ownStrip.children.length === 1 && ownStrip.firstElementChild === ownTab &&
+                            ownTab.getAttribute('aria-selected') === 'true' &&
+                            Math.abs(stripBounds.left - paneBounds.left) < 1 &&
+                            Math.abs(stripBounds.right - paneBounds.right) < 1 &&
+                            Math.abs(stripBounds.top - paneBounds.top) < 1 &&
+                            Math.abs(stripBounds.height - 35) < 1,
+                            'Each split owns its tab and full-width tab strip');
+                    }
+                    const ownStrip = tab.parentElement;
+                    const ownBounds = ownStrip.getBoundingClientRect();
+                    dragTab(tab, ownStrip, ownBounds.right - 10, ownBounds.top + 10);
+                    assert(shell.classList.contains('dw-monaco-split'), 'Dropping on the same group preserves split');
+                    const strip = (tab === editorTab ? previewTab : editorTab).parentElement;
                     const stripBounds = strip.getBoundingClientRect();
                     dragTab(tab, strip, stripBounds.right - 10, stripBounds.top + 10);
                     assert(!shell.classList.contains('dw-monaco-split'), 'Dropping on tab strip restores tabs');
+                    assert(shell.querySelectorAll('.dw-monaco-tabstrip').length === 1 &&
+                        tab.parentElement.children.length === 2 && tab.parentElement.lastElementChild === tab &&
+                        tab.getAttribute('aria-selected') === 'true', 'Transferred tab is selected and empty group is removed');
                 }
+            }
+            for (const tab of [editorTab, previewTab]) {
+                editorTab.click();
+                let bounds = editorPane.getBoundingClientRect();
+                dragTab(tab, editorPane, bounds.right - 10, bounds.top + bounds.height / 2);
+                const otherPane = tab === editorTab ? previewPane : editorPane;
+                bounds = otherPane.lastElementChild.getBoundingClientRect();
+                dragTab(tab, otherPane.lastElementChild, bounds.left + bounds.width / 2, bounds.top + bounds.height / 2);
+                assert(!shell.classList.contains('dw-monaco-split') && tab.parentElement.children.length === 2,
+                    'Center drop transfers the tab and closes the empty group');
             }
             editorTab.click();
             assert(model.getValue() === sourceBeforeDrag, 'Tab dragging preserves document text');

@@ -434,14 +434,23 @@
         const resizer = shell.querySelector('.dw-monaco-resizer');
         const editorPane = shell.querySelector('.dw-monaco-editor-pane');
         const previewPane = shell.querySelector('.dw-monaco-preview-pane');
+        const previewTabStrip = document.createElement('div');
+        previewTabStrip.className = 'dw-monaco-tabstrip';
+        const paneTabs = new Map([
+            [editorPane, tabStrip.querySelector('.dw-monaco-editor-pane-tab')],
+            [previewPane, tabStrip.querySelector('.dw-monaco-preview-pane-tab')]
+        ]);
+        const paneTabStrips = new Map([[editorPane, tabStrip], [previewPane, previewTabStrip]]);
+        paneTabStrips.forEach(function (strip) { strip.setAttribute('role', 'tablist'); });
         editorPane.classList.add('dw-monaco-active-tab');
         function activatePane(pane) {
             [editorPane, previewPane].forEach(function (candidate) {
                 candidate.classList.toggle('dw-monaco-active-tab', candidate === pane);
             });
-            tabStrip.querySelectorAll('header').forEach(function (header) {
-                const isEditorTab = header.classList.contains('dw-monaco-editor-pane-tab');
-                header.classList.toggle('dw-monaco-active-tab', isEditorTab === (pane === editorPane));
+            paneTabs.forEach(function (header, candidate) {
+                const selected = shell.classList.contains('dw-monaco-split') || candidate === pane;
+                header.classList.toggle('dw-monaco-active-tab', selected);
+                header.setAttribute('aria-selected', String(selected));
             });
             if (editor) editor.layout();
         }
@@ -450,6 +459,7 @@
                 activatePane(header.classList.contains('dw-monaco-editor-pane-tab') ? editorPane : previewPane);
             });
         });
+        activatePane(editorPane);
         const positionStatus = shell.querySelector('.dw-monaco-position');
         const sizeControl = document.getElementById('size__ctl') || document.querySelector('.size__ctl');
         const savedHeight = typeof DokuCookie !== 'undefined' ? parseFloat(DokuCookie.getValue('sizeCtl')) : NaN;
@@ -723,14 +733,29 @@
             function arrangePanes(first, second, stacked) {
                 shell.classList.add('dw-monaco-split');
                 shell.classList.toggle('dw-monaco-stacked', stacked);
+                paneTabStrips.forEach(function (strip, pane) {
+                    strip.appendChild(paneTabs.get(pane));
+                    pane.insertBefore(strip, pane.firstChild);
+                });
                 workspace.appendChild(first);
                 workspace.appendChild(resizer);
                 workspace.appendChild(second);
                 updateResizerOrientation();
-                editor.layout();
+                activatePane(draggedPane);
+            }
+            function mergePanes(targetStrip) {
+                if (targetStrip !== tabStrip) {
+                    Array.from(targetStrip.children).forEach(function (tab) { tabStrip.appendChild(tab); });
+                }
+                workspace.insertBefore(tabStrip, workspace.firstChild);
+                previewTabStrip.remove();
+                shell.classList.remove('dw-monaco-split', 'dw-monaco-stacked');
+                activatePane(draggedPane);
+                updateResizerOrientation();
+                clearDropTarget();
             }
             [editorPane, previewPane].forEach(function (pane) {
-                const tab = tabStrip.querySelector(pane.classList.contains('dw-monaco-editor-pane') ? '.dw-monaco-editor-pane-tab' : '.dw-monaco-preview-pane-tab');
+                const tab = paneTabs.get(pane);
                 tab.addEventListener('dragstart', function (event) {
                     draggedPane = pane;
                     shell.classList.add('dw-monaco-tab-dragging');
@@ -751,19 +776,21 @@
                 event.stopPropagation();
                 event.dataTransfer.dropEffect = 'move';
                 clearDropTarget();
-                if (tabStrip.contains(event.target)) return;
+                if (event.target.closest('.dw-monaco-tabstrip')) return;
                 const pane = event.target.closest('.dw-monaco-pane');
                 if (!pane) return;
-                const bounds = pane.getBoundingClientRect();
-                const distances = {
-                    left: event.clientX - bounds.left,
-                    right: bounds.right - event.clientX,
-                    top: event.clientY - bounds.top,
-                    bottom: bounds.bottom - event.clientY
-                };
-                const edge = Object.keys(distances).reduce(function (best, current) {
-                    return distances[current] < distances[best] ? current : best;
-                }, 'left');
+                if (shell.classList.contains('dw-monaco-split') && pane === draggedPane) return;
+                const bounds = (pane === editorPane ? editorNode : preview).getBoundingClientRect();
+                const x = event.clientX - bounds.left;
+                const y = event.clientY - bounds.top;
+                // Match VS Code's editor drop target: center merges, outer 10% splits.
+                let edge = 'center';
+                if (x <= bounds.width * 0.1 || x >= bounds.width * 0.9 ||
+                    y <= bounds.height * 0.1 || y >= bounds.height * 0.9) {
+                    edge = x < bounds.width / 3 ? 'left' : x > bounds.width * 2 / 3 ? 'right' :
+                        y < bounds.height / 2 ? 'top' : 'bottom';
+                }
+                if (edge === 'center' && !shell.classList.contains('dw-monaco-split')) return;
                 dropPane = pane === draggedPane ? (pane === editorPane ? previewPane : editorPane) : pane;
                 dropEdge = edge;
                 pane.dataset.dropEdge = edge;
@@ -775,25 +802,29 @@
                 if (!draggedPane) return;
                 event.preventDefault();
                 event.stopPropagation();
-                const draggedTab = tabStrip.querySelector(draggedPane.classList.contains('dw-monaco-editor-pane') ? '.dw-monaco-editor-pane-tab' : '.dw-monaco-preview-pane-tab');
-                if (tabStrip.contains(event.target)) {
+                const draggedTab = paneTabs.get(draggedPane);
+                const targetStrip = event.target.closest('.dw-monaco-tabstrip');
+                if (targetStrip) {
+                    if (shell.classList.contains('dw-monaco-split') && targetStrip === draggedTab.parentElement) {
+                        clearDropTarget();
+                        return;
+                    }
                     const targetTab = event.target.closest('header');
                     if (targetTab && targetTab !== draggedTab) {
                         const bounds = targetTab.getBoundingClientRect();
-                        tabStrip.insertBefore(draggedTab, event.clientX < bounds.left + bounds.width / 2 ? targetTab : targetTab.nextSibling);
+                        targetStrip.insertBefore(draggedTab, event.clientX < bounds.left + bounds.width / 2 ? targetTab : targetTab.nextSibling);
                     } else if (!targetTab) {
-                        tabStrip.appendChild(draggedTab);
+                        targetStrip.appendChild(draggedTab);
                     }
-                    shell.classList.remove('dw-monaco-split', 'dw-monaco-stacked');
-                    activatePane(draggedPane);
-                    updateResizerOrientation();
-                    clearDropTarget();
+                    mergePanes(targetStrip);
                     return;
                 }
                 if (!dropPane || !dropEdge) return;
-                const targetTab = tabStrip.querySelector(dropPane.classList.contains('dw-monaco-editor-pane') ? '.dw-monaco-editor-pane-tab' : '.dw-monaco-preview-pane-tab');
-                if (draggedTab && targetTab && draggedTab !== targetTab) {
-                    tabStrip.insertBefore(draggedTab, dropEdge === 'left' || dropEdge === 'top' ? targetTab : targetTab.nextSibling);
+                if (dropEdge === 'center') {
+                    const strip = paneTabStrips.get(dropPane);
+                    strip.appendChild(draggedTab);
+                    mergePanes(strip);
+                    return;
                 }
                 const first = dropEdge === 'left' || dropEdge === 'top' ? draggedPane : dropPane;
                 const second = first === editorPane ? previewPane : editorPane;
@@ -814,9 +845,8 @@
                 const bounds = workspace.getBoundingClientRect();
                 const stacked = isStackedLayout();
                 const position = stacked ? clientY - bounds.top : clientX - bounds.left;
-                const total = stacked ? bounds.height - tabStrip.offsetHeight - resizer.offsetHeight : bounds.width - resizer.offsetWidth;
-                const panePosition = stacked ? position - tabStrip.offsetHeight : position;
-                const percent = Math.max(20, Math.min(80, panePosition / total * 100));
+                const total = stacked ? bounds.height - resizer.offsetHeight : bounds.width - resizer.offsetWidth;
+                const percent = Math.max(20, Math.min(80, position / total * 100));
                 shell.style.setProperty('--dw-monaco-editor-size', percent + '%');
                 shell.style.setProperty('--dw-monaco-editor-ratio', percent + 'fr');
                 shell.style.setProperty('--dw-monaco-preview-ratio', (100 - percent) + 'fr');
