@@ -330,9 +330,10 @@
             '<div class="dw-monaco-resizer" role="separator" tabindex="0" aria-label="Resize editor and preview" aria-orientation="vertical"></div>' +
             '<section class="dw-monaco-pane dw-monaco-preview-pane"><header draggable="true" role="tab" title="Drag to move preview"><span class="codicon codicon-open-preview" aria-hidden="true"></span><span class="dw-monaco-tab-caption">Preview</span></header><div class="dw-monaco-preview" aria-live="polite"></div></section>' +
             '</div><div class="dw-monaco-statusbar"><span class="dw-monaco-status-item"><span class="codicon codicon-code" aria-hidden="true"></span> DokuWiki</span><span class="dw-monaco-status" role="status">Loading editor…</span>' +
-            '<span class="dw-monaco-position">Ln 1, Col 1</span><span class="dw-monaco-status-item">Spaces: 2</span><span class="dw-monaco-status-item">UTF-8</span>' +
+            '<span class="dw-monaco-position">Ln 1, Col 1</span>' +
+            '<button type="button" class="dw-monaco-indentation dw-monaco-status-button" title="Select Indentation" aria-haspopup="dialog" disabled>Spaces: 2</button>' +
             '<button type="button" class="dw-monaco-word-wrap dw-monaco-status-button" aria-pressed="true" title="Toggle word wrap"><span class="codicon codicon-word-wrap" aria-hidden="true"></span> Wrap</button>' +
-            '<label class="dw-monaco-format-control"><span class="codicon codicon-symbol-enum" aria-hidden="true"></span><span>Format</span><select class="dw-monaco-format"><option value="dokuwiki">DokuWiki</option><option value="markdown">GitHub Markdown</option></select></label></div>';
+            '<button type="button" class="dw-monaco-language dw-monaco-status-button" title="Select Language Mode" aria-haspopup="dialog" disabled>DokuWiki</button></div>';
         textarea.parentNode.insertBefore(shell, textarea.nextSibling);
         const workspace = shell.querySelector('.dw-monaco-workspace');
         const maximizeButton = shell.querySelector('.dw-monaco-maximize');
@@ -340,7 +341,6 @@
             shell.classList.toggle('dw-monaco-maximized', maximized);
             maximizeButton.setAttribute('aria-pressed', String(maximized));
             maximizeButton.title = maximized ? 'Restore editor size' : 'Maximize editor';
-            maximizeButton.querySelector('.dw-monaco-maximize-label').textContent = maximized ? 'Restore' : 'Maximize';
             maximizeButton.querySelector('.codicon').className = 'codicon ' + (maximized ? 'codicon-screen-normal' : 'codicon-screen-full');
         }
         maximizeButton.addEventListener('click', function () {
@@ -425,7 +425,9 @@
 
         const editorNode = shell.querySelector('.dw-monaco-editor');
         const preview = shell.querySelector('.dw-monaco-preview');
-        const format = shell.querySelector('.dw-monaco-format');
+        const languageButton = shell.querySelector('.dw-monaco-language');
+        const indentationButton = shell.querySelector('.dw-monaco-indentation');
+        let editor;
         const status = shell.querySelector('.dw-monaco-status');
         const wordWrapButtons = shell.querySelectorAll('.dw-monaco-word-wrap');
         const resizer = shell.querySelector('.dw-monaco-resizer');
@@ -440,7 +442,7 @@
                 const isEditorTab = header.classList.contains('dw-monaco-editor-pane-tab');
                 header.classList.toggle('dw-monaco-active-tab', isEditorTab === (pane === editorPane));
             });
-            editor.layout();
+            if (editor) editor.layout();
         }
         tabStrip.querySelectorAll('header').forEach(function (header) {
             header.addEventListener('click', function () {
@@ -454,7 +456,7 @@
             workspace.style.height = savedHeight + 'px';
             workspace.style.maxHeight = 'none';
         }
-        format.value = detectFormat(textarea.value);
+        const initialLanguage = detectFormat(textarea.value);
 
         try {
             await Promise.all([loadScript(assets.marked), loadScript(assets.purify), loadStyle(assets.codicons)]);
@@ -466,9 +468,9 @@
             });
             registerDokuWikiLanguage(monaco);
 
-            const editor = monaco.editor.create(editorNode, {
+            editor = monaco.editor.create(editorNode, {
                 value: textarea.value,
-                language: format.value,
+                language: initialLanguage,
                 automaticLayout: true,
                 minimap: {enabled: true, renderCharacters: false, showSlider: 'mouseover'},
                 wordWrap: 'on',
@@ -485,6 +487,79 @@
             });
             textarea.classList.add('dw-monaco-source');
             status.textContent = 'Ready';
+
+            // Monaco 0.52.2 exposes its native picker through these bundled AMD services.
+            const quickInput = await new Promise(function (resolve, reject) {
+                window.require([
+                    'vs/editor/standalone/browser/standaloneServices',
+                    'vs/platform/quickinput/common/quickInput'
+                ], function (services, quickInputModule) {
+                    resolve(services.StandaloneServices.get(quickInputModule.IQuickInputService));
+                }, reject);
+            });
+            const languageModes = [
+                {id: 'dokuwiki', label: 'DokuWiki'},
+                {id: 'markdown', label: 'Markdown', description: 'GitHub Flavored Markdown'}
+            ];
+            function updateLanguageStatus() {
+                const language = languageModes.find(function (mode) {
+                    return mode.id === editor.getModel().getLanguageId();
+                });
+                languageButton.textContent = language ? language.label : editor.getModel().getLanguageId();
+            }
+            function updateIndentationStatus() {
+                const options = editor.getModel().getOptions();
+                indentationButton.textContent = options.insertSpaces ? 'Spaces: ' + options.indentSize : 'Tab Size: ' + options.tabSize;
+            }
+            async function selectLanguageMode() {
+                activatePane(editorPane);
+                editor.focus();
+                const picks = languageModes.map(function (mode) {
+                    return Object.assign({}, mode, {
+                        description: mode.id === editor.getModel().getLanguageId() ? '(Configured Language)' : mode.description
+                    });
+                });
+                const picked = await quickInput.pick(picks, {placeHolder: 'Select Language Mode', matchOnDescription: true});
+                if (picked) monaco.editor.setModelLanguage(editor.getModel(), picked.id);
+            }
+            async function selectIndentation() {
+                activatePane(editorPane);
+                editor.focus();
+                const picks = [
+                    {type: 'separator', label: 'Change View'},
+                    'editor.action.indentUsingSpaces',
+                    'editor.action.indentUsingTabs',
+                    'editor.action.changeTabDisplaySize',
+                    {type: 'separator', label: 'Convert File'},
+                    'editor.action.detectIndentation',
+                    'editor.action.indentationToSpaces',
+                    'editor.action.indentationToTabs',
+                    'editor.action.reindentlines',
+                    'editor.action.reindentselectedlines'
+                ].map(function (item) {
+                    if (typeof item !== 'string') return item;
+                    const action = editor.getAction(item);
+                    return action && action.isSupported() ? {id: action.id, label: action.label, action: action} : null;
+                }).filter(Boolean);
+                const picked = await quickInput.pick(picks, {placeHolder: 'Select action', ariaLabel: 'Select Indentation Action'});
+                if (picked) {
+                    editor.focus();
+                    await picked.action.run();
+                }
+            }
+            editor.onDidChangeModelOptions(updateIndentationStatus);
+            editor.onDidChangeModelLanguage(function () {
+                updateLanguageStatus();
+                renderPreview();
+            });
+            updateLanguageStatus();
+            updateIndentationStatus();
+            languageButton.disabled = false;
+            indentationButton.disabled = false;
+            languageButton.addEventListener('click', selectLanguageMode);
+            indentationButton.addEventListener('click', selectIndentation);
+            editor.addAction({id: 'workbench.action.editor.changeLanguageMode', label: 'Change Language Mode', run: selectLanguageMode});
+            editor.addAction({id: 'changeEditorIndentation', label: 'Change Indentation', run: selectIndentation});
 
             let metricRefreshFrame;
             function refreshEditorMetrics() {
@@ -531,7 +606,7 @@
                     const body = new URLSearchParams({
                         call: 'plugin_monaco_preview',
                         id: pageName,
-                        format: format.value,
+                        format: editor.getModel().getLanguageId(),
                         wikitext: source
                     });
                     try {
@@ -548,7 +623,7 @@
                     } catch (error) {
                         if (error.name === 'AbortError') return;
                         console.warn('DokuWiki preview failed; using the browser fallback.', error);
-                        if (format.value === 'markdown') {
+                        if (editor.getModel().getLanguageId() === 'markdown') {
                             window.marked.setOptions({gfm: true, breaks: false});
                             html = window.marked.parse(source);
                         } else {
@@ -621,10 +696,6 @@
                 });
             }
 
-            format.addEventListener('change', function () {
-                monaco.editor.setModelLanguage(editor.getModel(), format.value);
-                renderPreview();
-            });
             let wordWrapEnabled = true;
             wordWrapButtons.forEach(function (button) {
                 button.addEventListener('click', function () {

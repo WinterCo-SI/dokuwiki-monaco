@@ -1,7 +1,7 @@
 # DokuWiki Monaco Editor
 
 Replaces DokuWiki's edit textarea with Monaco Editor and a live, split-pane
-preview. The format menu switches between DokuWiki wikitext and GitHub-flavored
+preview. The language picker switches between DokuWiki wikitext and GitHub-flavored
 Markdown syntax highlighting and rendering.
 
 Previews for both editing formats are rendered by DokuWiki through a same-origin
@@ -54,7 +54,11 @@ change.
 
 ## Notes
 
-- The selected format is stored locally in the browser.
+- Click the language name in the status bar to open **Select Language Mode**.
+  Choose DokuWiki or Markdown; the initial mode is detected from the page content.
+- Click **Spaces: 2** (or the current indentation setting) to open **Select action**.
+  Monaco's commands change tab size, switch between spaces and tabs, detect
+  indentation, convert existing whitespace, and reindent lines.
 - Click **Maximize** in the title bar to fill the browser window. Click **Restore**
   or press Escape to return to the previous editor size.
 - Format selection affects editing and live preview only. Saving still writes
@@ -63,3 +67,14 @@ change.
   a side-by-side and stacked layout.
 - External links and images in preview may make normal browser requests to
   their targets. DokuWiki previews also make a same-origin request to the wiki.
+
+## Browser checks
+
+After installing local assets, serve this directory over HTTP and open
+`tests/editor.html`. Click **Run regression checks** to exercise the native
+pickers, indentation conversion and undo, language and preview updates, and
+picker dimensions under wiki template styles. The checks compare dimensions
+against the pinned Monaco CSS in an isolated frame.
+
+The status controls use the quick-input service bundled in Monaco 0.52.2's AMD
+distribution. Re-run these checks when updating Monaco.

@@ -1,0 +1,144 @@
+(function () {
+    'use strict';
+    const results = document.getElementById('results');
+    const errors = [];
+    window.addEventListener('error', function (event) { errors.push(event.message); });
+    window.addEventListener('unhandledrejection', function (event) { errors.push(String(event.reason)); });
+    function assert(condition, message) {
+        if (!condition) throw new Error(message);
+        results.textContent += '\nPASS: ' + message;
+    }
+    async function until(predicate) {
+        const deadline = performance.now() + 10000;
+        while (!predicate()) {
+            if (performance.now() > deadline) throw new Error('Timed out waiting for editor state');
+            await new Promise(requestAnimationFrame);
+        }
+    }
+    async function compareNativeDimensions(widget) {
+        const frame = document.createElement('iframe');
+        frame.style.cssText = 'position:absolute;left:-10000px;width:1000px;height:600px';
+        const stylesheet = new URL('../vendor/monaco/vs/editor/editor.main.css', location.href).href;
+        frame.srcdoc = '<link rel="stylesheet" href="' + stylesheet + '"><body class="monaco-editor vs-dark"></body>';
+        const loaded = new Promise(function (resolve) { frame.onload = resolve; });
+        document.body.appendChild(frame);
+        try {
+            await loaded;
+            const body = frame.contentDocument.body;
+            body.style.fontFamily = getComputedStyle(widget).fontFamily;
+            const copy = frame.contentDocument.importNode(widget, true);
+            body.appendChild(copy);
+            for (const selector of ['.quick-input-titlebar', '.quick-input-header', '.quick-input-box input', '.monaco-list-row', '.monaco-keybinding-key']) {
+                const actual = widget.querySelector(selector);
+                const native = copy.querySelector(selector);
+                if (actual && native) {
+                    assert(Math.abs(actual.getBoundingClientRect().height - native.getBoundingClientRect().height) < 0.1,
+                        selector + ' height matches unmodified Monaco CSS');
+                }
+            }
+        } finally { frame.remove(); }
+    }
+    document.getElementById('run').addEventListener('click', async function () {
+        this.disabled = true;
+        results.textContent = 'Running…';
+        try {
+            await until(function () { return window.monaco && !document.querySelector('.dw-monaco-language').disabled; });
+            const editor = monaco.editor.getEditors()[0];
+            const model = editor.getModel();
+            const shell = document.querySelector('.dw-monaco-shell');
+            const indentation = shell.querySelector('.dw-monaco-indentation');
+            const language = shell.querySelector('.dw-monaco-language');
+            const quickInput = await new Promise(function (resolve) {
+                window.require(['vs/editor/standalone/browser/standaloneServices', 'vs/platform/quickinput/common/quickInput'],
+                    function (services, module) { resolve(services.StandaloneServices.get(module.IQuickInputService)); });
+            });
+            function currentPicker() { return quickInput.currentQuickInput; }
+            async function picker(placeholder) {
+                await until(function () { return currentPicker() && currentPicker().placeholder === placeholder; });
+                return currentPicker();
+            }
+            function choose(input, id) {
+                const item = input.items.find(function (candidate) { return candidate.id === id; });
+                if (!item) throw new Error('Missing picker item: ' + id);
+                input.activeItems = [item];
+                input.selectedItems = [item];
+                input.accept();
+            }
+            assert(!shell.querySelector('select') && !shell.querySelector('.dw-monaco-statusbar').textContent.includes('UTF-8'), 'Dropdown and encoding item removed');
+            indentation.click();
+            let input = await picker('Select action');
+            assert(input.items.some(function (item) { return item.id === 'editor.action.indentationToTabs'; }), 'Native indentation action menu opens');
+            await new Promise(requestAnimationFrame);
+            const widget = shell.querySelector('.quick-input-widget');
+            assert(widget.querySelector('.quick-input-titlebar').getBoundingClientRect().height === 0, 'Untitled picker has no title-bar height under wiki styles');
+            const inputElement = widget.querySelector('.quick-input-box input');
+            assert(getComputedStyle(inputElement).boxSizing === 'border-box', 'Native input uses border-box dimensions');
+            await compareNativeDimensions(widget);
+            input.hide();
+            assert(model.getOptions().tabSize === 2, 'Cancelling the menu preserves indentation');
+            indentation.click();
+            input = await picker('Select action');
+            choose(input, 'editor.action.indentUsingSpaces');
+            input = await picker('Select Tab Size for Current File');
+            choose(input, '4');
+            await until(function () { return indentation.textContent === 'Spaces: 4'; });
+            assert(model.getOptions().tabSize === 4 && model.getOptions().insertSpaces, 'Native size picker updates model and status');
+            indentation.click();
+            input = await picker('Select action');
+            choose(input, 'editor.action.indentUsingTabs');
+            input = await picker('Select Tab Size for Current File');
+            choose(input, '2');
+            await until(function () { return indentation.textContent === 'Tab Size: 2'; });
+            assert(!model.getOptions().insertSpaces, 'Tab indentation updates model and status');
+            model.setValue('    first\n        second');
+            model.updateOptions({tabSize: 4, insertSpaces: true});
+            indentation.click();
+            input = await picker('Select action');
+            choose(input, 'editor.action.indentationToTabs');
+            await until(function () { return model.getValue().startsWith('\tfirst'); });
+            assert(model.getValue() === '\tfirst\n\t\tsecond', 'Native conversion changes leading whitespace');
+            await model.undo();
+            assert(model.getValue() === '    first\n        second', 'Indentation conversion can be undone');
+            shell.querySelector('.dw-monaco-preview-pane-tab').click();
+            language.click();
+            input = await picker('Select Language Mode');
+            assert(shell.querySelector('.dw-monaco-editor-pane').classList.contains('dw-monaco-active-tab'), 'Picker opens from preview by activating editor');
+            choose(input, 'markdown');
+            await until(function () { return language.textContent === 'Markdown'; });
+            assert(model.getLanguageId() === 'markdown', 'Language picker changes model and status');
+            await until(function () { return previewRequests.some(function (request) { return request.get('format') === 'markdown'; }); });
+            assert(true, 'Language change refreshes preview with selected format');
+            language.click();
+            input = await picker('Select Language Mode');
+            input.hide();
+            assert(model.getLanguageId() === 'markdown', 'Cancelling language picker preserves mode');
+            language.click();
+            input = await picker('Select Language Mode');
+            choose(input, 'dokuwiki');
+            await until(function () { return language.textContent === 'DokuWiki'; });
+            assert(model.getLanguageId() === 'dokuwiki', 'Language can switch back to DokuWiki');
+            const workspace = shell.querySelector('.dw-monaco-workspace');
+            const previousHeight = workspace.style.height;
+            shell.querySelector('.dw-monaco-maximize').click();
+            indentation.click();
+            input = await picker('Select action');
+            input.hide();
+            shell.querySelector('.dw-monaco-maximize').click();
+            assert(workspace.style.height === previousHeight, 'Picker works maximized and restore preserves saved height');
+            model.setValue('====== Example ======\n  * First item\n  * Second item\n');
+            model.updateOptions({tabSize: 2, indentSize: 2, insertSpaces: true});
+            await editor.getAction('editor.action.quickCommand').run();
+            await until(function () { return currentPicker(); });
+            await new Promise(requestAnimationFrame);
+            await compareNativeDimensions(widget);
+            currentPicker().hide();
+            assert(errors.length === 0, 'No uncaught errors: ' + errors.join('; '));
+            results.textContent += '\nAll checks passed.';
+        } catch (error) {
+            results.textContent += '\nFAIL: ' + error.message;
+            console.error(error);
+        } finally {
+            this.disabled = false;
+        }
+    });
+}());

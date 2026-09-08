@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Monaco status bar regression checks</title>
+    <meta name="dokuwiki-monaco-config" content="">
+    <style>
+        body { margin: 24px; font-family: "Segoe UI", sans-serif; }
+        #results { white-space: pre-wrap; }
+    </style>
+    <style id="template-styles">
+        /* Representative wiki template rules that must not distort the picker. */
+        .dokuwiki ul { margin: 1em 0; padding-left: 2em; }
+        .dokuwiki li { margin: 0.5em 0; }
+        .dokuwiki input { padding: 6px 12px; line-height: 1.5; }
+    </style>
+    <link id="plugin-styles" rel="stylesheet" href="../style.css">
+    <script>
+        const monacoRoot = '../vendor/monaco/vs';
+        document.querySelector('meta[name="dokuwiki-monaco-config"]').content = JSON.stringify({
+            marked: {src: '../vendor/marked/marked.umd.js'},
+            purify: {src: '../vendor/dompurify/purify.min.js'},
+            codicons: {src: '../vendor/codicons/codicon.css'},
+            monacoLoader: {src: monacoRoot + '/loader.js'},
+            monacoMain: {src: monacoRoot + '/editor/editor.main.js'},
+            monacoCss: {src: monacoRoot + '/editor/editor.main.css'},
+            monacoRoot: monacoRoot
+        });
+        const previewRequests = [];
+        const originalFetch = window.fetch.bind(window);
+        window.fetch = function (url, options) {
+            if (String(url).endsWith('/lib/exe/ajax.php')) {
+                previewRequests.push(new URLSearchParams(options.body));
+                return Promise.resolve(new Response('', {status: 503}));
+            }
+            return originalFetch(url, options);
+        };
+        window.DokuCookie = {getValue: function () { return '480px'; }};
+    </script>
+    <script defer src="../script.js"></script>
+</head>
+<body>
+    <h1>Monaco status bar regression checks</h1>
+    <p>Serve the repository over HTTP after installing the pinned local assets.</p>
+    <button id="run" type="button">Run regression checks</button>
+    <pre id="results" role="status">Ready to run.</pre>
+    <form class="dokuwiki">
+        <textarea id="wiki__text">====== Example ======
+  * First item
+  * Second item
+</textarea>
+    </form>
+    <script src="editor-checks.js"></script>
+</body>
+</html>

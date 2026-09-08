@@ -372,7 +372,6 @@ body:has(.dw-monaco-shell.dw-monaco-maximized) { overflow: hidden; }
 }
 
 .dw-monaco-editor .monaco-editor .quick-input-widget,
-.dw-monaco-editor .monaco-editor .quick-input-widget input,
 .dw-monaco-editor .monaco-editor .quick-input-list .monaco-list-row,
 .dw-monaco-editor .monaco-editor .quick-input-list .monaco-icon-label,
 .dw-monaco-editor .monaco-editor .quick-input-list .monaco-icon-label *,
@@ -388,7 +387,6 @@ body:has(.dw-monaco-shell.dw-monaco-maximized) { overflow: hidden; }
     text-transform: none !important;
 }
 
-.dw-monaco-editor .monaco-editor .quick-input-widget input,
 .dw-monaco-editor .monaco-editor .quick-input-list .monaco-list-row,
 .dw-monaco-editor .monaco-editor .quick-input-list .monaco-icon-label,
 .dw-monaco-editor .monaco-editor .quick-input-list .monaco-icon-label *,
@@ -398,28 +396,58 @@ body:has(.dw-monaco-shell.dw-monaco-maximized) { overflow: hidden; }
     line-height: 22px !important;
 }
 
+.dw-monaco-editor .monaco-editor .quick-input-widget {
+    line-height: normal;
+}
+
+/* Keep wiki list styles from giving Monaco's empty title bar a visible height. */
+.dw-monaco-editor .monaco-editor .quick-input-titlebar {
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+}
+
+.dw-monaco-editor .monaco-editor .quick-input-widget .actions-container {
+    margin: 0 auto !important;
+    padding: 0 !important;
+    list-style: none !important;
+}
+
+.dw-monaco-editor .monaco-editor .quick-input-widget .action-item {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.dw-monaco-editor .monaco-editor .quick-input-box .monaco-inputbox,
 .dw-monaco-editor .monaco-editor .quick-input-box input {
-    padding: 4px !important;
+    box-sizing: border-box;
+}
+
+.dw-monaco-editor .monaco-editor .quick-input-box input {
+    min-height: 0 !important;
+    padding: 4px 6px !important;
+    border: 0 !important;
+    font: inherit !important;
+    line-height: normal !important;
 }
 
 .dw-monaco-editor .monaco-editor .quick-input-list .monaco-keybinding {
     display: flex !important;
     align-items: center !important;
-    height: 22px !important;
     font-size: 11px !important;
     font-weight: 400 !important;
-    line-height: 22px !important;
+    line-height: 10px !important;
 }
 
 .dw-monaco-editor .monaco-editor .quick-input-list .monaco-keybinding-key {
-    box-sizing: border-box !important;
+    box-sizing: content-box !important;
     display: inline-block !important;
     height: auto !important;
     min-height: 0 !important;
     padding: 3px 5px !important;
     font-size: 11px !important;
     font-weight: 400 !important;
-    line-height: 11px !important;
+    line-height: 10px !important;
     vertical-align: middle !important;
 }
 
@@ -429,7 +457,7 @@ body:has(.dw-monaco-shell.dw-monaco-maximized) { overflow: hidden; }
     padding: 0 !important;
     font-size: 11px !important;
     font-weight: 400 !important;
-    line-height: 22px !important;
+    line-height: 10px !important;
     vertical-align: middle !important;
 }
 
@@ -607,9 +635,7 @@ body:has(.dw-monaco-shell.dw-monaco-maximized) { overflow: hidden; }
 .dw-monaco-statusbar .dw-monaco-status,
 .dw-monaco-statusbar .dw-monaco-status-item,
 .dw-monaco-statusbar .dw-monaco-position,
-.dw-monaco-statusbar .dw-monaco-status-button,
-.dw-monaco-statusbar .dw-monaco-format-control,
-.dw-monaco-statusbar .dw-monaco-format-control select {
+.dw-monaco-statusbar .dw-monaco-status-button {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
     font-size: 12px !important;
     font-style: normal !important;
@@ -629,8 +655,7 @@ body:has(.dw-monaco-shell.dw-monaco-maximized) { overflow: hidden; }
 
 .dw-monaco-status-item,
 .dw-monaco-position,
-.dw-monaco-status-button,
-.dw-monaco-format-control {
+.dw-monaco-status-button {
     box-sizing: border-box;
     min-height: 22px;
     padding: 0 7px;
@@ -649,8 +674,7 @@ body:has(.dw-monaco-shell.dw-monaco-maximized) { overflow: hidden; }
 
 .dw-monaco-status-item:hover,
 .dw-monaco-position:hover,
-.dw-monaco-status-button:hover,
-.dw-monaco-format-control:hover { background: var(--vscode-statusBarItem-hoverBackground); }
+.dw-monaco-status-button:hover { background: var(--vscode-statusBarItem-hoverBackground); }
 
 .dw-monaco-status-button {
     appearance: none !important;
@@ -676,40 +700,15 @@ body:has(.dw-monaco-shell.dw-monaco-maximized) { overflow: hidden; }
     text-transform: none !important;
 }
 
+.dw-monaco-status-button:hover {
+    background: var(--vscode-statusBarItem-hoverBackground) !important;
+}
+
 .dw-monaco-status-button .codicon {
     line-height: 1;
 }
 
 .dw-monaco-control-off { opacity: 0.55; }
-
-.dw-monaco-format-control {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin: 0;
-    font-weight: 400 !important;
-}
-
-.dw-monaco-format-control select {
-    appearance: auto !important;
-    box-sizing: border-box !important;
-    float: none !important;
-    height: 20px !important;
-    margin: 0 !important;
-    padding: 0 16px 0 3px !important;
-    border: 0 !important;
-    border-radius: 0 !important;
-    outline: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    color: inherit !important;
-    font: inherit !important;
-    font-weight: 400 !important;
-    text-align: left !important;
-    text-indent: 0 !important;
-    text-shadow: none !important;
-    text-transform: none !important;
-}
 
 .dw-monaco-preview-hidden .dw-monaco-workspace {
     grid-template-columns: 1fr;
