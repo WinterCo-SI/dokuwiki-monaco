@@ -440,14 +440,16 @@ body:has(.dw-monaco-shell.dw-monaco-maximized) { overflow: hidden; }
     text-transform: none !important;
 }
 
-.dw-monaco-editor .monaco-editor .quick-input-list-entry,
-.dw-monaco-editor .monaco-editor .quick-input-list .monaco-list-row,
+.dw-monaco-editor .monaco-editor .quick-input-list .monaco-icon-label {
+    align-items: center;
+}
+
 .dw-monaco-editor .monaco-editor .quick-input-list .monaco-icon-label,
 .dw-monaco-editor .monaco-editor .quick-input-list .monaco-icon-label *,
 .dw-monaco-editor .monaco-editor .quick-input-list .monaco-highlighted-label,
 .dw-monaco-editor .monaco-editor .quick-input-list .label-name,
 .dw-monaco-editor .monaco-editor .quick-input-list .label-description {
-    line-height: 22px !important;
+    line-height: normal !important;
 }
 
 .dw-monaco-editor .monaco-editor .quick-input-widget {
@@ -473,14 +475,29 @@ body:has(.dw-monaco-shell.dw-monaco-maximized) { overflow: hidden; }
 /* Wiki form-label margins must not change the height of a picker row. */
 .dw-monaco-editor .monaco-editor .quick-input-list-entry {
     box-sizing: border-box;
+    height: 100%;
+    align-items: center;
+    line-height: normal !important;
 }
 
 .dw-monaco-editor .monaco-editor .quick-input-list-label {
     display: flex;
+    align-items: center;
+    height: auto;
     margin: 0 !important;
     padding: 0 !important;
     border: 0;
     font: inherit;
+}
+
+.dw-monaco-editor .monaco-editor .quick-input-list-rows {
+    height: auto;
+    justify-content: center;
+}
+
+.dw-monaco-editor .monaco-editor .quick-input-list-row:first-child {
+    min-height: 22px;
+    align-items: center;
 }
 
 /* Keep wiki list styles from giving Monaco's empty title bar a visible height. */

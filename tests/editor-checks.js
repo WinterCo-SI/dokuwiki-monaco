@@ -41,22 +41,26 @@
                         selector + ' height matches unmodified Monaco CSS');
                 }
             }
-            const actualLabels = widget.querySelectorAll('.label-name');
-            const nativeLabels = copy.querySelectorAll('.label-name');
-            actualLabels.forEach(function (label, index) {
-                const nativeLabel = nativeLabels[index];
-                const row = label.closest('.monaco-list-row').getBoundingClientRect();
-                const nativeRow = nativeLabel.closest('.monaco-list-row').getBoundingClientRect();
-                const actualRange = document.createRange();
-                actualRange.selectNodeContents(label);
-                const nativeRange = frame.contentDocument.createRange();
-                nativeRange.selectNodeContents(nativeLabel);
-                const actualBounds = actualRange.getBoundingClientRect();
-                const nativeBounds = nativeRange.getBoundingClientRect();
-                assert(Math.abs((actualBounds.top - row.top) - (nativeBounds.top - nativeRow.top)) < 0.1 &&
-                    Math.abs((row.bottom - actualBounds.bottom) - (nativeRow.bottom - nativeBounds.bottom)) < 0.1,
-                    'Text alignment matches native row: ' + label.textContent);
-            });
+            const sourceRow = widget.querySelector('.monaco-list-row');
+            const sample = sourceRow.cloneNode(true);
+            sample.removeAttribute('id');
+            sample.querySelectorAll('[id]').forEach(function (element) { element.removeAttribute('id'); });
+            sample.style.left = '-10000px';
+            sourceRow.parentElement.appendChild(sample);
+            try {
+                for (const height of [22, 32, 44]) {
+                    sample.style.height = height + 'px';
+                    for (const selector of ['.monaco-icon-label-container', '.monaco-keybinding', '.quick-input-list-separator']) {
+                        const element = sample.querySelector(selector);
+                        if (!element || !element.textContent) continue;
+                        const row = sample.getBoundingClientRect();
+                        const bounds = element.getBoundingClientRect();
+                        assert(Math.abs((bounds.top + bounds.bottom) / 2 - (row.top + row.bottom) / 2) <= 0.5 &&
+                            getComputedStyle(element).transform === 'none',
+                            selector + ' stays centered in a ' + height + 'px row without offsets');
+                    }
+                }
+            } finally { sample.remove(); }
         } finally { frame.remove(); }
     }
     document.getElementById('run').addEventListener('click', async function () {
