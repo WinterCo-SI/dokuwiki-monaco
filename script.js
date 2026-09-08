@@ -779,7 +779,6 @@
                 if (event.target.closest('.dw-monaco-tabstrip')) return;
                 const pane = event.target.closest('.dw-monaco-pane');
                 if (!pane) return;
-                if (shell.classList.contains('dw-monaco-split') && pane === draggedPane) return;
                 const bounds = (pane === editorPane ? editorNode : preview).getBoundingClientRect();
                 const x = event.clientX - bounds.left;
                 const y = event.clientY - bounds.top;
@@ -790,8 +789,9 @@
                     edge = x < bounds.width / 3 ? 'left' : x > bounds.width * 2 / 3 ? 'right' :
                         y < bounds.height / 2 ? 'top' : 'bottom';
                 }
-                if (edge === 'center' && !shell.classList.contains('dw-monaco-split')) return;
-                dropPane = pane === draggedPane ? (pane === editorPane ? previewPane : editorPane) : pane;
+                if (edge !== 'center' && shell.classList.contains('dw-monaco-split') && pane === draggedPane) return;
+                dropPane = edge === 'center' ? pane :
+                    pane === draggedPane ? (pane === editorPane ? previewPane : editorPane) : pane;
                 dropEdge = edge;
                 pane.dataset.dropEdge = edge;
             }, true);
@@ -821,6 +821,10 @@
                 }
                 if (!dropPane || !dropEdge) return;
                 if (dropEdge === 'center') {
+                    if (!shell.classList.contains('dw-monaco-split') || dropPane === draggedPane) {
+                        clearDropTarget();
+                        return;
+                    }
                     const strip = paneTabStrips.get(dropPane);
                     strip.appendChild(draggedTab);
                     mergePanes(strip);

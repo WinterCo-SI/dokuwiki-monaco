@@ -153,15 +153,39 @@
             const editorPane = shell.querySelector('.dw-monaco-editor-pane');
             const previewPane = shell.querySelector('.dw-monaco-preview-pane');
             const divider = shell.querySelector('.dw-monaco-resizer');
-            function dragTab(tab, target, x, y) {
+            function dragTab(tab, target, x, y, beforeDrop) {
                 const dataTransfer = new DataTransfer();
                 tab.dispatchEvent(new DragEvent('dragstart', {bubbles: true, dataTransfer: dataTransfer}));
                 const options = {bubbles: true, cancelable: true, dataTransfer: dataTransfer, clientX: x, clientY: y};
                 target.dispatchEvent(new DragEvent('dragover', options));
+                if (beforeDrop) beforeDrop();
                 target.dispatchEvent(new DragEvent('drop', options));
                 tab.dispatchEvent(new DragEvent('dragend', {bubbles: true, dataTransfer: dataTransfer}));
             }
+            function centerDrop(tab, pane) {
+                const content = pane.lastElementChild;
+                const bounds = content.getBoundingClientRect();
+                dragTab(tab, content, bounds.left + bounds.width / 2, bounds.top + bounds.height / 2, function () {
+                    const overlay = getComputedStyle(pane, '::after');
+                    const paneBounds = pane.getBoundingClientRect();
+                    const contentBounds = content.getBoundingClientRect();
+                    assert(overlay.display === 'block' && overlay.pointerEvents === 'none' &&
+                        Math.abs(paneBounds.top + parseFloat(overlay.top) - contentBounds.top) < 1 &&
+                        Math.abs(parseFloat(overlay.width) - contentBounds.width) < 1 &&
+                        Math.abs(parseFloat(overlay.height) - contentBounds.height) < 1,
+                        'Center hover shows an overlay covering the entire editor content');
+                });
+                assert(!shell.querySelector('[data-drop-edge]'), 'Center overlay clears after drop');
+            }
             const sourceBeforeDrag = model.getValue();
+            for (const tab of [editorTab, previewTab]) {
+                editorTab.click();
+                const order = Array.from(tab.parentElement.children);
+                centerDrop(tab, editorPane);
+                assert(!shell.classList.contains('dw-monaco-split') &&
+                    order.every(function (item, index) { return tab.parentElement.children[index] === item; }),
+                    'Center drop within a single group preserves layout and tab order');
+            }
             for (const tab of [editorTab, previewTab]) {
                 for (const edge of ['left', 'right', 'top', 'bottom']) {
                     editorTab.click();
@@ -210,9 +234,10 @@
                 editorTab.click();
                 let bounds = editorPane.getBoundingClientRect();
                 dragTab(tab, editorPane, bounds.right - 10, bounds.top + bounds.height / 2);
+                centerDrop(tab, tab === editorTab ? editorPane : previewPane);
+                assert(shell.classList.contains('dw-monaco-split'), 'Center drop onto the source group preserves split');
                 const otherPane = tab === editorTab ? previewPane : editorPane;
-                bounds = otherPane.lastElementChild.getBoundingClientRect();
-                dragTab(tab, otherPane.lastElementChild, bounds.left + bounds.width / 2, bounds.top + bounds.height / 2);
+                centerDrop(tab, otherPane);
                 assert(!shell.classList.contains('dw-monaco-split') && tab.parentElement.children.length === 2,
                     'Center drop transfers the tab and closes the empty group');
             }

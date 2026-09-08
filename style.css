@@ -563,7 +563,8 @@ body:has(.dw-monaco-shell.dw-monaco-maximized) { overflow: hidden; }
 .dw-monaco-pane[data-drop-edge="right"]::after { inset: 0 0 0 50%; }
 .dw-monaco-pane[data-drop-edge="top"]::after { inset: 0 0 50% 0; }
 .dw-monaco-pane[data-drop-edge="bottom"]::after { inset: 50% 0 0 0; }
-.dw-monaco-pane[data-drop-edge="center"]::after { inset: 35px 0 0; }
+.dw-monaco-pane[data-drop-edge="center"]::after { inset: 0; }
+.dw-monaco-split .dw-monaco-pane[data-drop-edge="center"]::after { top: 35px; }
 .dw-monaco-tab-dragging .dw-monaco-pane > header { cursor: grabbing; }
 
 .dw-monaco-editor,
