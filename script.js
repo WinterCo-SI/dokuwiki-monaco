@@ -656,7 +656,7 @@
                     });
                     try {
                         const base = typeof DOKU_BASE === 'string' ? DOKU_BASE : '/';
-                        const response = await fetch(base + 'lib/exe/ajax.php', {
+                        const response = await fetch(base + 'lib/ajax/plugin_monaco_preview', {
                             method: 'POST',
                             credentials: 'same-origin',
                             headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'},
