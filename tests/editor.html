@@ -31,7 +31,7 @@
         const previewRequests = [];
         const originalFetch = window.fetch.bind(window);
         window.fetch = function (url, options) {
-            if (String(url).endsWith('/lib/exe/ajax.php')) {
+            if (String(url).endsWith('/lib/ajax/plugin_monaco_preview')) {
                 previewRequests.push(new URLSearchParams(options.body));
                 return Promise.resolve(new Response('', {status: 503}));
             }

@@ -683,22 +683,22 @@ body:has(.dw-monaco-shell.dw-monaco-maximized) { overflow: hidden; }
     line-height: 1.55;
 }
 
-.dw-monaco-preview a {
+.dw-monaco-preview-fallback a {
     color: #4daafc;
 }
 
-.dw-monaco-preview h1,
-.dw-monaco-preview h2,
-.dw-monaco-preview h3 {
+.dw-monaco-preview-fallback h1,
+.dw-monaco-preview-fallback h2,
+.dw-monaco-preview-fallback h3 {
     color: #f0f0f0;
 }
 
-.dw-monaco-preview img {
+.dw-monaco-preview-fallback img {
     max-width: 100%;
     height: auto;
 }
 
-.dw-monaco-preview pre {
+.dw-monaco-preview-fallback pre {
     overflow: auto;
     padding: 0.75rem;
     border: 1px solid #333;
@@ -706,19 +706,19 @@ body:has(.dw-monaco-shell.dw-monaco-maximized) { overflow: hidden; }
     color: #d4d4d4;
 }
 
-.dw-monaco-preview table {
+.dw-monaco-preview-fallback table {
     width: auto;
     margin: 0.75rem 0;
     border-collapse: collapse;
 }
 
-.dw-monaco-preview th,
-.dw-monaco-preview td {
+.dw-monaco-preview-fallback th,
+.dw-monaco-preview-fallback td {
     padding: 0.35rem 0.6rem;
     border: 1px solid #444;
 }
 
-.dw-monaco-preview th {
+.dw-monaco-preview-fallback th {
     background: #252526;
 }
 

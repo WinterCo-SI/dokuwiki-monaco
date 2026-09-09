@@ -10,6 +10,14 @@ applied. If the server preview fails, the browser falls back to Marked for
 GitHub-flavored Markdown or a basic DokuWiki renderer. Rendered output is
 sanitized by DOMPurify before it enters the page.
 
+Server previews pass through DokuWiki's `TPL_CONTENT_DISPLAY` event, allowing
+registered template and plugin handlers to format the rendered content.
+Bootstrap3 is initialized explicitly for AJAX because it normally registers
+its handlers while loading the page template. Its own configured heading and
+table transformations are used; the plugin's content CSS applies only to the
+browser fallback. Other templates that register handlers only from their page
+entry point may need a similar initialization adapter.
+
 The workbench follows the browser-IDE pattern used by StackBlitz and
 CodeSandbox: Monaco supplies the editor, while this plugin owns the pane layout
 and UI state. Icons come from Microsoft's official MIT-licensed

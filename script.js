@@ -647,6 +647,7 @@
                     const source = editor.getValue();
                     textarea.value = source;
                     let html;
+                    let fallback = false;
                     previewRequest = new AbortController();
                     const body = new URLSearchParams({
                         call: 'plugin_monaco_preview',
@@ -668,6 +669,7 @@
                     } catch (error) {
                         if (error.name === 'AbortError') return;
                         console.warn('DokuWiki preview failed; using the browser fallback.', error);
+                        fallback = true;
                         if (editor.getModel().getLanguageId() === 'markdown') {
                             window.marked.setOptions({gfm: true, breaks: false});
                             html = window.marked.parse(source);
@@ -675,6 +677,10 @@
                             html = renderDokuWiki(source);
                         }
                     }
+                    preview.classList.toggle('dw-monaco-preview-fallback', fallback);
+                    const wikiStyle = getComputedStyle(shell.parentElement);
+                    preview.style.font = wikiStyle.font;
+                    preview.style.color = wikiStyle.color;
                     preview.innerHTML = window.DOMPurify.sanitize(html, {
                         USE_PROFILES: {html: true},
                         ADD_ATTR: ['target'],

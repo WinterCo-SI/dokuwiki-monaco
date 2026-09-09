@@ -28,7 +28,7 @@ class action_plugin_monaco extends ActionPlugin
         $event->preventDefault();
         $event->stopPropagation();
 
-        global $ID, $INPUT;
+        global $ID, $INPUT, $ACT, $INFO, $conf;
 
         $page = cleanID($INPUT->post->str('id'));
         if (!$page || auth_quickaclcheck($page) < AUTH_READ) {
@@ -43,13 +43,29 @@ class action_plugin_monaco extends ActionPlugin
         }
 
         $previousId = $ID;
+        $previousAct = $ACT;
+        $previousInfo = $INFO;
         $ID = $page;
         try {
+            $ACT = 'preview';
+            $INFO = pageinfo();
+            // Bootstrap3 registers its content-display hook from main.php's global include.
+            // AJAX skips main.php, so initialize the active template without rendering chrome.
+            if ($conf['template'] === 'bootstrap3') {
+                require_once tpl_incdir() . 'tpl/global.php';
+                require_once tpl_incdir() . 'tpl/functions.php';
+            }
             $info = [];
             header('Content-Type: text/html; charset=utf-8');
-            echo p_render('xhtml', p_get_instructions($source), $info);
+            $html = '<div class="preview"><div class="pad">' .
+                p_render('xhtml', p_get_instructions($source), $info) . '</div></div>';
+            Event::createAndTrigger('TPL_CONTENT_DISPLAY', $html, static function ($html) {
+                echo $html;
+            });
         } finally {
             $ID = $previousId;
+            $ACT = $previousAct;
+            $INFO = $previousInfo;
         }
     }
 
